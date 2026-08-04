@@ -3,7 +3,9 @@
 interface ImportMetaEnv {
   /** Supabase project URL. Absent in local-only builds — sync then stays off. */
   readonly VITE_SUPABASE_URL?: string;
-  /** Public anon key. Safe to ship; row-level security does the real work. */
+  /** Publishable key (sb_publishable_...). Safe to ship; RLS does the real work. */
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+  /** Legacy anon key. Still accepted, but Supabase retires it end of 2026. */
   readonly VITE_SUPABASE_ANON_KEY?: string;
 }
 

@@ -48,7 +48,7 @@ Names fold to a stable key: lowercase, accents stripped, everything else
 collapsed to dashes. "Måns Brandt", "måns brandt" and "Måns-Brandt" are one
 account. Two people who want the same name cannot both have it.
 
-When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are absent, the Supabase
+When `VITE_SUPABASE_URL` and a public key are absent, the Supabase
 SDK is tree-shaken out of the bundle entirely and the account panel says so.
 When present, the SDK loads on demand — a separate ~53 kB chunk fetched only
 when you open Settings or already have a session — so visitors who never sign
@@ -63,15 +63,22 @@ in do not pay for it.
 3. Authentication → **Sign In / Providers** → expand **Email**: leave the
    provider enabled and turn **Confirm email off**. Without that, sign-up waits
    for a confirmation email that can never arrive at a `.invalid` address.
-4. Add the project URL and the **anon** key as repository secrets named
-   `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Settings → Secrets and
-   variables → Actions). The deploy workflow picks them up.
+4. Add the project URL and the public key as repository secrets named
+   `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (Settings → Secrets
+   and variables → Actions). The deploy workflow picks them up.
+
+   Both live under Project Settings → **API Keys**, or behind the **Connect**
+   button at the top of the dashboard. Take the **publishable** key
+   (`sb_publishable_…`), not the legacy `anon` one: Supabase retires anon and
+   service_role keys at the end of 2026. `VITE_SUPABASE_ANON_KEY` still works
+   as a fallback if a project only has the old format, and the publishable key
+   wins when both are set.
 
 No SMTP, no email templates, no redirect URLs, no domain.
 
-The anon key is designed to be public. Row-level security is what keeps one
-account's rows away from another's — every policy in the schema is scoped to
-`auth.uid()`.
+The publishable key is designed to ship in client code. Row-level security is
+what keeps one account's rows away from another's — every policy in the schema
+is scoped to `auth.uid()`.
 
 Sign-ups are open: anyone can create an account. To close that, drop the
 `createAccount` path in `src/sync/authStore.ts` and add users from the Supabase

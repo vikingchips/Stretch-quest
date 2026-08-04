@@ -15,8 +15,8 @@ create table if not exists public.user_state (
 
 alter table public.user_state enable row level security;
 
--- The anon key is public by design, so these policies are the only thing
--- keeping one account's rows away from another's. Every policy is scoped to
+-- The publishable key is public by design, so these policies are the only
+-- thing keeping one account's rows away from another's. Every policy is scoped to
 -- auth.uid(); there is deliberately no policy that allows reading other rows.
 drop policy if exists "read own state" on public.user_state;
 create policy "read own state"
