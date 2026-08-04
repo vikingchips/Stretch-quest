@@ -76,7 +76,7 @@ tree-shaken out of the bundle entirely. When present it loads as a separate
    and its row-level security policies.
 3. Authentication → **Sign In / Providers** → expand **Email**: leave the
    provider enabled and turn **Confirm email off**. Without that, sign-up waits
-   for a confirmation email that can never arrive at a `.invalid` address.
+   on a confirmation nobody will ever receive — the addresses are synthetic.
 4. Add the project URL and the public key as repository secrets named
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (Settings → Secrets
    and variables → Actions). The deploy workflow picks them up.
