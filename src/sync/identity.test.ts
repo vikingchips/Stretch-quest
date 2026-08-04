@@ -61,8 +61,12 @@ describe('isValidPin', () => {
 });
 
 describe('credentials', () => {
-  it('builds an address on a domain that can never resolve', () => {
-    expect(nameToIdentity('Måns Brandt')).toBe('mans-brandt@stretchquest.invalid');
+  it('builds an address from the folded name', () => {
+    expect(nameToIdentity('Måns Brandt')).toBe('mans-brandt@stretchquest.app');
+  });
+
+  it('uses a real top-level domain, since Supabase validates it', () => {
+    expect(nameToIdentity('a b')).not.toMatch(/\.(invalid|local|test|example)$/);
   });
 
   it('pads the pin past the six-character minimum', () => {

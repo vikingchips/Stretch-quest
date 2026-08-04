@@ -2,18 +2,21 @@
  * Sign-in is a name and a four-digit code. No email is ever sent.
  *
  * Supabase Auth only speaks email and password, so a name is folded into a
- * synthetic address on a reserved TLD that cannot resolve anywhere. Nothing is
- * ever delivered to it — it is an identifier, not a mailbox. This keeps real
- * sessions, token refresh and `auth.uid()`-scoped row-level security exactly
- * as they were, which a hand-rolled name/PIN table would not.
+ * synthetic address that is never sent to — an identifier, not a mailbox.
+ * This keeps real sessions, token refresh and `auth.uid()`-scoped row-level
+ * security exactly as they are, which a hand-rolled name/PIN table would not.
  */
 
 /**
- * `.invalid` is reserved by RFC 2606 precisely so it can never be a real
- * domain. If a Supabase project rejects it, any domain-shaped string works —
- * it is never resolved.
+ * Supabase validates the top-level domain against real TLDs, so the reserved
+ * `.invalid` from RFC 2606 — the semantically correct choice — is rejected
+ * outright with "Email address ... is invalid". A valid TLD it is.
+ *
+ * Nothing is ever sent here: the app has no mailer, and setup requires
+ * "Confirm email" to be off, so Supabase does not send anything either.
+ * Overridable in case a project's validation is stricter still.
  */
-const IDENTITY_DOMAIN = 'stretchquest.invalid';
+const IDENTITY_DOMAIN = import.meta.env.VITE_IDENTITY_DOMAIN ?? 'stretchquest.app';
 
 /** Supabase requires at least six characters; four digits alone are short. */
 const PIN_PREFIX = 'sq-pin-';

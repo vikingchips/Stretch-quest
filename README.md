@@ -50,10 +50,15 @@ panel says so where people choose a code. Anything more sensitive needs a
 different scheme.
 
 Under the hood it is ordinary Supabase password auth. A name is folded to a
-synthetic address on the RFC 2606 reserved `.invalid` TLD, which can never
-resolve and is never mailed — it is an identifier, not a mailbox. Real
+synthetic address that is never sent to — an identifier, not a mailbox. Real
 sessions, token refresh and `auth.uid()`-scoped RLS keep working exactly as
 they would with email. See `src/sync/identity.ts`.
+
+The address uses a real TLD (`stretchquest.app` by default). The semantically
+correct choice would be RFC 2606's reserved `.invalid`, but Supabase validates
+the top-level domain against real ones and rejects it outright. Nothing is ever
+delivered there: the app has no mailer, and step 3 below turns Supabase's off.
+`VITE_IDENTITY_DOMAIN` overrides it if a project validates more strictly still.
 
 Names fold to a stable key: lowercase, accents stripped, everything else
 collapsed to dashes. "Måns Brandt", "måns brandt" and "Måns-Brandt" are one

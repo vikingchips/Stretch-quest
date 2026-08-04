@@ -28,6 +28,11 @@ function explain(raw: string): string {
   if (message.includes('already registered') || message.includes('already been registered')) {
     return 'That name is taken. Pick another, or sign in if it is yours.';
   }
+  // Sign-in folds the name into an address behind the scenes, so Supabase
+  // complaining about email is meaningless to whoever is reading it.
+  if (message.includes('email') && message.includes('invalid')) {
+    return 'That name could not be used. Try a simpler one — letters and spaces.';
+  }
   return raw;
 }
 

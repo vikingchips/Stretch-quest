@@ -34,6 +34,8 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           # Legacy fallback; Supabase retires anon keys at the end of 2026.
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Only needed if a project rejects the default sign-in address domain.
+          VITE_IDENTITY_DOMAIN: ${{ secrets.VITE_IDENTITY_DOMAIN }}
       # Publishes to the gh-pages branch. Enable once under
       # Settings -> Pages -> Source: "Deploy from a branch" -> gh-pages.
       - uses: peaceiris/actions-gh-pages@v4
