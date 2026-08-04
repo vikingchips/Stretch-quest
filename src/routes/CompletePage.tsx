@@ -53,7 +53,7 @@ export function CompletePage() {
       <h1 className="text-2xl lowercase">that's done</h1>
       <p className="mt-2 text-sm lowercase text-ink-soft">{record.routineName}</p>
 
-      <div className="mt-12 text-6xl leading-none tabular-nums">+{xpShown}</div>
+      <div className="display mt-12 text-6xl leading-none tabular-nums">+{xpShown}</div>
       <div className="mt-2 text-xs lowercase tracking-[0.18em] text-ink-soft">xp</div>
 
       {xpBreakdown.total > 0 ? (

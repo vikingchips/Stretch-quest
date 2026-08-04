@@ -33,7 +33,7 @@ export function StatsPage() {
       <dl className="mb-14 grid grid-cols-3 gap-6 border-y border-line-soft py-6">
         {totals.map(([label, value]) => (
           <div key={label}>
-            <dd className="text-2xl leading-none tabular-nums">{value}</dd>
+            <dd className="display text-2xl leading-none tabular-nums">{value}</dd>
             <dt className="mt-2 text-[11px] lowercase text-ink-soft">{label}</dt>
           </div>
         ))}

@@ -28,16 +28,16 @@
   --color-surface: #fbf8f5;
   --color-line: #d4cdc5;
   --color-line-soft: #e5dfd8;
-  --color-ink: #3d3d3d;
-  --color-ink-soft: #6b6560;
+  --color-ink: #2e2c2a;
+  --color-ink-soft: #57524d;
 
   /* Naturals. The -deep variants are the text-safe ones (>= 4.5:1 on paper);
      the base tones are for fills, rings and marks only. */
   --color-pine: #5a7a6b;
-  --color-pine-deep: #47614f;
+  --color-pine-deep: #3d5545;
   --color-fjord: #7ba0b8;
-  --color-fjord-deep: #4f7186;
-  --color-clay: #8c5148;
+  --color-fjord-deep: #456273;
+  --color-clay: #7d463e;
 
   /* Muted category tones — fills only, never text. */
   --color-bark: #8a6f4e;
@@ -52,7 +52,9 @@ html {
 
 body {
   font-family: var(--font-sans);
-  font-weight: 200;
+  /* Light rather than extralight: at body sizes 200 reads as washed out no
+     matter what the contrast ratio says. Display sizes still use 200. */
+  font-weight: 300;
   color: var(--color-ink);
   letter-spacing: 0.01em;
   -webkit-tap-highlight-color: transparent;
@@ -87,6 +89,11 @@ input {
 
 .safe-top {
   padding-top: env(safe-area-inset-top);
+}
+
+/* Large numerals keep the airier extralight weight; body text does not. */
+.display {
+  font-weight: 200;
 }
 
 /* Body copy stays inside a comfortable measure. */

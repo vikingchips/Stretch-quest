@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { useProgressStore } from './store/progressStore';
+import { useSettingsStore } from './store/settingsStore';
+import { Onboarding } from './components/Onboarding';
 import { HomePage } from './routes/HomePage';
 import { LibraryPage } from './routes/LibraryPage';
 import { RoutineDetailPage } from './routes/RoutineDetailPage';
@@ -11,10 +13,14 @@ import { BuilderPage } from './routes/BuilderPage';
 import { StatsPage } from './routes/StatsPage';
 import { AchievementsPage } from './routes/AchievementsPage';
 import { SettingsPage } from './routes/SettingsPage';
+import { FriendsPage } from './routes/FriendsPage';
+import { AddFriendPage } from './routes/AddFriendPage';
 
 export default function App() {
   const location = useLocation();
   const reconcile = useProgressStore((s) => s.reconcile);
+  const onboardingSeen = useSettingsStore((s) => s.onboardingSeen);
+  const dismissOnboarding = useSettingsStore((s) => s.dismissOnboarding);
 
   useEffect(() => {
     reconcile();
@@ -36,8 +42,11 @@ export default function App() {
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/add/:slug" element={<AddFriendPage />} />
       </Routes>
       {!immersive && <BottomNav />}
+      {!onboardingSeen && <Onboarding onDone={dismissOnboarding} />}
     </div>
   );
 }

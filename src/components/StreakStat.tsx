@@ -12,7 +12,7 @@ export function StreakStat({ streak, size = 'sm' }: Props) {
   if (size === 'lg') {
     return (
       <div className="flex flex-col items-center">
-        <span className={`text-6xl leading-none ${active ? 'text-ink' : 'text-line'}`}>
+        <span className={`display text-6xl leading-none ${active ? 'text-ink' : 'text-line'}`}>
           {streak}
         </span>
         <span className="mt-2 text-xs lowercase tracking-wide text-ink-soft">

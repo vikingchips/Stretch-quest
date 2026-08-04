@@ -183,7 +183,7 @@ export function SessionPage() {
           <div className="mt-8 text-sm lowercase text-ink-soft">{segment.reps} reps</div>
         )}
 
-        <div className="mt-6 text-7xl tabular-nums leading-none">{formatClock(clock)}</div>
+        <div className="display mt-6 text-7xl tabular-nums leading-none">{formatClock(clock)}</div>
         {selfPaced && (
           <div className="mt-2 text-xs lowercase text-ink-soft">
             counting up · take the tempo you need

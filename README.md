@@ -21,6 +21,9 @@ for everything else.
 - **Optional accounts** — a name and a four-digit code backs your history up
   and carries it to another device. No email anywhere. Off by default; see
   below.
+- **Friends** — share a link, follow each other, and see who is actually
+  keeping their routine this week.
+- **First-run tour** — four pages explaining the timing split, shown once.
 
 ## Sync (optional)
 
@@ -83,6 +86,19 @@ is scoped to `auth.uid()`.
 Sign-ups are open: anyone can create an account. To close that, drop the
 `createAccount` path in `src/sync/authStore.ts` and add users from the Supabase
 dashboard instead.
+
+**Friends.** `user_state` stays strictly private. Everything a friend can see
+lives in a separate `profiles` row — name, streak, longest streak, xp, last
+active day, and a seven-character week pattern — which each client writes for
+itself on sync. The split is deliberate: no policy ever has to reason about
+which fields inside a private JSON blob are safe to expose.
+
+Your share link is `#/add/<your-name-slug>`; opening it sends a friend
+request, and accepting creates the friendship. Two things go through
+`security definer` functions rather than policies, because a row-level check
+cannot express them: resolving a name to a user without exposing the whole
+profiles table (`find_profile_by_slug`), and accepting a request atomically
+with deleting it (`accept_friend_request`).
 
 **How sync behaves.** Signing in pulls the remote row, merges it into local
 state, and pushes the merged result back; later changes push on a two-second

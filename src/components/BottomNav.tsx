@@ -5,6 +5,7 @@ const TABS: Array<{ to: string; label: string; icon: IconName }> = [
   { to: '/', label: 'home', icon: 'home' },
   { to: '/routines', label: 'routines', icon: 'routines' },
   { to: '/stats', label: 'stats', icon: 'stats' },
+  { to: '/friends', label: 'friends', icon: 'friends' },
   { to: '/achievements', label: 'awards', icon: 'awards' },
 ];
 

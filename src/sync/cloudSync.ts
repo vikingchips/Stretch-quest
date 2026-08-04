@@ -4,6 +4,8 @@ import { useRoutinesStore } from '../store/routinesStore';
 import { getSupabase, syncConfigured } from './client';
 import { useAuthStore } from './authStore';
 import { mergeProgress, mergeRoutines, mergeSessions } from './merge';
+import { publishProfile } from './friends';
+import { nameToSlug } from './identity';
 
 export type SyncState = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -71,6 +73,19 @@ async function push(userId: string): Promise<void> {
     { onConflict: 'user_id' },
   );
   if (error) throw error;
+
+  // The friends-visible summary rides along with every push, so a streak on
+  // someone else's screen is never more stale than your own sync.
+  const displayName = useAuthStore.getState().displayName;
+  if (displayName) {
+    await publishProfile({
+      userId,
+      slug: nameToSlug(displayName),
+      displayName,
+      progress: progressStore.progress,
+      sessions: progressStore.sessions,
+    });
+  }
 }
 
 /**
