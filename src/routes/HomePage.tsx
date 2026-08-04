@@ -5,10 +5,11 @@ import { useRoutinesStore } from '../store/routinesStore';
 import { BUILTIN_ROUTINES, BUILTIN_ROUTINE_BY_ID } from '../data/routines';
 import { goalProgress } from '../game/dailyGoal';
 import { todayKey } from '../game/dates';
-import { StreakFlame } from '../components/StreakFlame';
+import { StreakStat } from '../components/StreakStat';
 import { XpLevelBar } from '../components/XpLevelBar';
 import { DailyGoalRing } from '../components/DailyGoalRing';
 import { RoutineCard } from '../components/RoutineCard';
+import { Icon } from '../components/Icon';
 import { formatMinutes } from '../lib/format';
 
 export function HomePage() {
@@ -31,55 +32,59 @@ export function HomePage() {
     BUILTIN_ROUTINES.find((r) => r.id !== lastRoutine?.id) ?? BUILTIN_ROUTINES[0];
 
   return (
-    <main className="px-4 pb-24 pt-6">
-      <header className="mb-4 flex items-center justify-between">
+    <main className="px-6 pb-28 pt-10">
+      <header className="mb-12 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold">StretchQuest</h1>
-          <p className="text-sm font-semibold text-ink-dim">Stay bendy. Keep the flame alive.</p>
+          <h1 className="text-2xl lowercase tracking-wide">stretchquest</h1>
+          <p className="mt-1 text-sm text-ink-soft">a few quiet minutes, every day.</p>
         </div>
-        <Link to="/settings" aria-label="Settings" className="text-2xl">
-          ⚙️
+        <Link
+          to="/settings"
+          aria-label="Settings"
+          className="p-1 text-ink-soft hover:text-ink"
+        >
+          <Icon name="sliders" size={22} />
         </Link>
       </header>
 
       {(freezeToast || streakLostToast) && (
         <button
           onClick={dismissToasts}
-          className={`mb-4 w-full rounded-2xl p-3 text-left text-sm font-bold animate-float-up ${
-            freezeToast ? 'bg-frost/15 text-frost' : 'bg-flame/15 text-flame'
-          }`}
+          className="animate-reveal mb-10 w-full border border-line-soft bg-surface px-4 py-3 text-left"
         >
-          {freezeToast
-            ? '❄️ A streak freeze saved your streak! Stretch today to keep it going.'
-            : '💔 Your streak reset. Today is a great day to start a new one!'}
-          <span className="mt-0.5 block text-[11px] font-semibold opacity-70">Tap to dismiss</span>
+          <span className="text-sm text-ink">
+            {freezeToast
+              ? 'A streak freeze held your streak overnight. Stretch today to keep it.'
+              : 'Your streak reset. Today is a fine day to begin another.'}
+          </span>
+          <span className="mt-1 block text-[11px] lowercase text-ink-soft">tap to dismiss</span>
         </button>
       )}
 
-      <section className="mb-4 flex items-center justify-between rounded-2xl bg-card p-4">
-        <StreakFlame streak={progress.streak} size="lg" />
-        <div className="flex flex-col items-center gap-1">
+      <section className="mb-12 flex items-center justify-between">
+        <StreakStat streak={progress.streak} size="lg" />
+        <div className="flex flex-col items-center gap-3">
           <DailyGoalRing
             fraction={goal.fraction}
             met={goal.met}
             label={formatMinutes(goal.activeSec)}
-            sublabel={`of ${dailyGoalMinutes} min goal`}
+            sublabel={`of ${dailyGoalMinutes} min`}
           />
-          <span className="text-[11px] font-bold text-ink-dim">
-            ❄️ {progress.streakFreezes} freeze{progress.streakFreezes === 1 ? '' : 's'} banked
+          <span className="text-[11px] lowercase text-ink-soft">
+            {progress.streakFreezes} freeze{progress.streakFreezes === 1 ? '' : 's'} banked
           </span>
         </div>
       </section>
 
-      <div className="mb-6">
+      <div className="mb-12">
         <XpLevelBar xp={progress.xp} />
       </div>
 
       <section>
-        <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-ink-dim">
-          {lastRoutine ? 'Jump back in' : 'Start here'}
+        <h2 className="mb-1 text-sm lowercase text-ink-soft">
+          {lastRoutine ? 'pick up where you left off' : 'start here'}
         </h2>
-        <div className="flex flex-col gap-2">
+        <div className="border-t border-line-soft">
           {lastRoutine && <RoutineCard routine={lastRoutine} />}
           {suggestion && suggestion.id !== lastRoutine?.id && (
             <RoutineCard routine={suggestion} />
@@ -87,9 +92,9 @@ export function HomePage() {
         </div>
         <Link
           to="/routines"
-          className="mt-4 block rounded-2xl bg-brand py-3 text-center text-base font-extrabold text-surface transition-transform active:scale-[0.98]"
+          className="mt-8 block border border-line py-3.5 text-center text-sm lowercase tracking-wide hover:bg-surface"
         >
-          Browse all routines
+          browse all routines
         </Link>
       </section>
     </main>

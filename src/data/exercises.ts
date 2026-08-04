@@ -10,7 +10,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['neck'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🙂', accent: '#8b5cf6' },
     tips: 'For more depth, gently rest the hand of the tilting side on your head — never pull.',
   },
   {
@@ -21,7 +20,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['shoulders'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🤗', accent: '#8b5cf6' },
   },
   {
     id: 'overhead-triceps',
@@ -31,7 +29,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['arms', 'shoulders'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '💪', accent: '#8b5cf6' },
   },
   {
     id: 'thread-the-needle',
@@ -41,7 +38,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['shoulders', 'back'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🪡', accent: '#8b5cf6' },
   },
   {
     id: 'wall-chest-opener',
@@ -51,7 +47,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['chest', 'shoulders'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🚪', accent: '#8b5cf6' },
     tips: 'Great after a climbing session — climbers get tight in the chest from pulling.',
   },
   {
@@ -62,7 +57,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['shoulders', 'back'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🦅', accent: '#8b5cf6' },
   },
 
   // ── Wrists / fingers (climbing gold) ────────────────────────────────────
@@ -74,7 +68,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['wrists', 'arms'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🖐️', accent: '#f59e0b' },
     tips: 'The single most important stretch for climbers. Keep the elbow straight.',
   },
   {
@@ -85,7 +78,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['wrists', 'arms'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🫱', accent: '#f59e0b' },
   },
   {
     id: 'prayer-stretch',
@@ -95,7 +87,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['wrists'],
     defaultDurationSec: 30,
     side: 'both',
-    art: { kind: 'emoji', value: '🙏', accent: '#f59e0b' },
   },
   {
     id: 'finger-extensor-spread',
@@ -105,7 +96,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['fingers'],
     defaultDurationSec: 30,
     side: 'both',
-    art: { kind: 'emoji', value: '✋', accent: '#f59e0b' },
     tips: 'Antagonist work for crimping — do this after every climbing session.',
   },
   {
@@ -116,7 +106,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['wrists'],
     defaultDurationSec: 30,
     side: 'both',
-    art: { kind: 'emoji', value: '🔄', accent: '#f59e0b' },
   },
 
   // ── Back / core ─────────────────────────────────────────────────────────
@@ -128,7 +117,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['back', 'core'],
     defaultDurationSec: 40,
     side: 'both',
-    art: { kind: 'emoji', value: '🐱', accent: '#10b981' },
   },
   {
     id: 'childs-pose',
@@ -138,7 +126,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['back', 'hips', 'shoulders'],
     defaultDurationSec: 40,
     side: 'both',
-    art: { kind: 'emoji', value: '🧎', accent: '#10b981' },
   },
   {
     id: 'cobra',
@@ -148,7 +135,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['core', 'back', 'chest'],
     defaultDurationSec: 30,
     side: 'both',
-    art: { kind: 'emoji', value: '🐍', accent: '#10b981' },
   },
   {
     id: 'seated-spinal-twist',
@@ -158,7 +144,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['back', 'glutes', 'core'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🌀', accent: '#10b981' },
   },
   {
     id: 'standing-side-bend',
@@ -168,7 +153,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['core', 'back'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🌙', accent: '#10b981' },
   },
   {
     id: 'thoracic-wall-extension',
@@ -178,7 +162,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['back', 'shoulders'],
     defaultDurationSec: 40,
     side: 'both',
-    art: { kind: 'emoji', value: '🧱', accent: '#10b981' },
   },
 
   // ── Hips / glutes ───────────────────────────────────────────────────────
@@ -190,7 +173,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'glutes'],
     defaultDurationSec: 45,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🕊️', accent: '#ec4899' },
     tips: 'The classic climber hip opener. Use a cushion under the hip if it hovers.',
   },
   {
@@ -201,7 +183,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'glutes'],
     defaultDurationSec: 40,
     side: 'both',
-    art: { kind: 'emoji', value: '🦋', accent: '#ec4899' },
   },
   {
     id: 'ninety-ninety',
@@ -211,7 +192,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'glutes'],
     defaultDurationSec: 40,
     side: 'per-side',
-    art: { kind: 'emoji', value: '📐', accent: '#ec4899' },
   },
   {
     id: 'deep-squat-hold',
@@ -221,7 +201,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'ankles', 'glutes'],
     defaultDurationSec: 45,
     side: 'both',
-    art: { kind: 'emoji', value: '🏋️', accent: '#ec4899' },
     tips: 'Essential for high steps and rock-overs on the wall.',
   },
   {
@@ -232,7 +211,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['glutes', 'hips'],
     defaultDurationSec: 40,
     side: 'per-side',
-    art: { kind: 'emoji', value: '4️⃣', accent: '#ec4899' },
   },
   {
     id: 'frog-pose',
@@ -242,7 +220,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips'],
     defaultDurationSec: 45,
     side: 'both',
-    art: { kind: 'emoji', value: '🐸', accent: '#ec4899' },
   },
   {
     id: 'lizard-lunge',
@@ -252,7 +229,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'quads'],
     defaultDurationSec: 40,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🦎', accent: '#ec4899' },
   },
 
   // ── Legs / feet (running gold) ──────────────────────────────────────────
@@ -264,7 +240,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hamstrings'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🦵', accent: '#3b82f6' },
   },
   {
     id: 'lying-hamstring',
@@ -274,7 +249,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hamstrings', 'calves'],
     defaultDurationSec: 45,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🛏️', accent: '#3b82f6' },
   },
   {
     id: 'standing-quad',
@@ -284,7 +258,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['quads'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🦩', accent: '#3b82f6' },
   },
   {
     id: 'kneeling-hip-flexor',
@@ -294,7 +267,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'quads'],
     defaultDurationSec: 45,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🧎‍♂️', accent: '#3b82f6' },
     tips: 'Runners live here — tight hip flexors steal your stride length.',
   },
   {
@@ -305,7 +277,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['calves'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🧱', accent: '#3b82f6' },
   },
   {
     id: 'bent-knee-calf',
@@ -315,7 +286,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['calves', 'ankles'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '📏', accent: '#3b82f6' },
   },
   {
     id: 'itband-crossover',
@@ -325,7 +295,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['hips', 'quads'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '🤸', accent: '#3b82f6' },
   },
   {
     id: 'plantar-toe-stretch',
@@ -335,7 +304,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['feet', 'ankles'],
     defaultDurationSec: 30,
     side: 'both',
-    art: { kind: 'emoji', value: '🦶', accent: '#3b82f6' },
   },
   {
     id: 'ankle-circles',
@@ -345,7 +313,6 @@ export const EXERCISES: Exercise[] = [
     targetAreas: ['ankles', 'feet'],
     defaultDurationSec: 30,
     side: 'per-side',
-    art: { kind: 'emoji', value: '⭕', accent: '#3b82f6' },
   },
 ];
 

@@ -4,7 +4,8 @@ import type { Routine, RoutineStep } from '../types';
 import { EXERCISES, EXERCISE_BY_ID } from '../data/exercises';
 import { useRoutinesStore } from '../store/routinesStore';
 import { useProgressStore } from '../store/progressStore';
-import { ExerciseArt } from '../components/ExerciseArt';
+import { BodyMark } from '../components/BodyMark';
+import { Icon } from '../components/Icon';
 import { formatAreaLabel } from '../lib/format';
 
 const DURATION_STEP = 5;
@@ -67,132 +68,140 @@ export function BuilderPage() {
   }
 
   return (
-    <main className="px-4 pb-32 pt-6">
-      <button onClick={() => navigate(-1)} className="mb-3 text-sm font-extrabold text-ink-dim">
-        ‹ Back
+    <main className="px-6 pb-40 pt-8">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-8 flex items-center gap-1 text-sm lowercase text-ink-soft hover:text-ink"
+      >
+        <Icon name="chevronLeft" size={16} />
+        back
       </button>
-      <h1 className="mb-4 text-2xl font-extrabold">
-        {editing ? 'Edit routine' : 'Build a routine'}
+      <h1 className="mb-8 text-2xl lowercase tracking-wide">
+        {editing ? 'edit routine' : 'build a routine'}
       </h1>
 
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Routine name (e.g. Morning yoga)"
+        placeholder="routine name"
         maxLength={40}
-        className="mb-4 w-full rounded-2xl border border-line bg-card p-4 font-bold placeholder:text-ink-dim/60 focus:border-brand focus:outline-none"
+        className="mb-10 w-full border-b border-line bg-transparent pb-3 text-lg lowercase placeholder:text-ink-soft/60 focus:border-pine focus:outline-none"
       />
 
       {steps.length === 0 && (
-        <p className="mb-4 rounded-2xl bg-card p-4 text-sm font-semibold text-ink-dim">
-          Add stretches from the library to build your own routine — for yoga, desk breaks,
+        <p className="measure mb-8 text-sm leading-relaxed text-ink-soft">
+          Add stretches from the library to build your own sequence — for yoga, desk breaks,
           post-gym, anything.
         </p>
       )}
 
-      <div className="flex flex-col gap-2">
+      <ol className={steps.length > 0 ? 'border-t border-line-soft' : ''}>
         {steps.map((step, i) => {
           const exercise = EXERCISE_BY_ID[step.exerciseId];
           if (!exercise) return null;
           return (
-            <div key={`${step.exerciseId}-${i}`} className="rounded-2xl bg-card p-3">
-              <div className="flex items-center gap-3">
-                <ExerciseArt art={exercise.art} />
+            <li key={`${step.exerciseId}-${i}`} className="border-b border-line-soft py-4">
+              <div className="flex items-center gap-4">
+                <BodyMark areas={exercise.targetAreas} />
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-extrabold">{exercise.name}</h3>
-                  <p className="text-xs font-semibold text-ink-dim">
-                    {step.durationSec}s{exercise.side === 'per-side' ? ' per side' : ''}
+                  <h3 className="truncate text-base lowercase">{exercise.name}</h3>
+                  <p className="mt-0.5 text-xs lowercase text-ink-soft">
+                    {exercise.side === 'per-side' ? 'per side' : 'both sides'}
                   </p>
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col text-ink-soft">
                   <button
                     onClick={() => move(i, -1)}
                     disabled={i === 0}
-                    className="px-2 text-lg disabled:opacity-25"
+                    className="p-1 hover:text-ink disabled:opacity-25"
                     aria-label="Move up"
                   >
-                    ▲
+                    <Icon name="arrowUp" size={16} />
                   </button>
                   <button
                     onClick={() => move(i, 1)}
                     disabled={i === steps.length - 1}
-                    className="px-2 text-lg disabled:opacity-25"
+                    className="p-1 hover:text-ink disabled:opacity-25"
                     aria-label="Move down"
                   >
-                    ▼
+                    <Icon name="arrowDown" size={16} />
                   </button>
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="mt-3 flex items-center justify-between pl-[50px]">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => adjustDuration(i, -DURATION_STEP)}
-                    className="h-8 w-8 rounded-full bg-line/60 font-extrabold"
+                    className="border border-line-soft p-1.5 text-ink-soft hover:text-ink"
+                    aria-label="Shorter"
                   >
-                    −
+                    <Icon name="minus" size={14} />
                   </button>
-                  <span className="w-12 text-center text-sm font-extrabold">
-                    {step.durationSec}s
-                  </span>
+                  <span className="w-12 text-center text-sm tabular-nums">{step.durationSec}s</span>
                   <button
                     onClick={() => adjustDuration(i, DURATION_STEP)}
-                    className="h-8 w-8 rounded-full bg-line/60 font-extrabold"
+                    className="border border-line-soft p-1.5 text-ink-soft hover:text-ink"
+                    aria-label="Longer"
                   >
-                    +
+                    <Icon name="plus" size={14} />
                   </button>
                 </div>
                 <button
                   onClick={() => setSteps(steps.filter((_, j) => j !== i))}
-                  className="text-sm font-bold text-red-400"
+                  className="text-xs lowercase text-ink-soft hover:text-clay"
                 >
-                  Remove
+                  remove
                 </button>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
 
       <button
         onClick={() => {
           setSearch('');
           setPickerOpen(true);
         }}
-        className="mt-3 w-full rounded-2xl border-2 border-dashed border-line py-3 font-extrabold text-ink-dim"
+        className="mt-6 flex w-full items-center justify-center gap-2 border border-line py-3.5 text-sm lowercase text-ink-soft hover:bg-surface hover:text-ink"
       >
-        + Add stretch
+        <Icon name="plus" size={16} />
+        add stretch
       </button>
 
-      <div className="fixed bottom-16 left-0 right-0 z-10 mx-auto max-w-md px-4 pb-4">
+      <div className="fixed inset-x-0 bottom-16 z-10 mx-auto max-w-md bg-gradient-to-t from-paper via-paper to-transparent px-6 pb-5 pt-14">
         <button
           onClick={save}
           disabled={steps.length === 0}
-          className="w-full rounded-2xl bg-brand py-4 text-lg font-extrabold text-surface shadow-lg shadow-brand/30 disabled:opacity-40"
+          className="w-full bg-pine-deep py-4 text-sm lowercase tracking-wide text-paper hover:brightness-110 disabled:opacity-30"
         >
-          Save routine
+          save routine
         </button>
       </div>
 
       {pickerOpen && (
-        <div className="fixed inset-0 z-30 flex flex-col bg-surface/95 backdrop-blur-sm">
-          <div className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-hidden px-4 pt-6">
-            <div className="mb-3 flex items-center gap-3">
-              <input
-                autoFocus
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search stretches…"
-                className="flex-1 rounded-2xl border border-line bg-card p-3 font-bold placeholder:text-ink-dim/60 focus:border-brand focus:outline-none"
-              />
+        <div className="animate-reveal fixed inset-0 z-30 flex flex-col bg-paper">
+          <div className="mx-auto flex w-full max-w-md flex-1 flex-col overflow-hidden px-6 pt-8">
+            <div className="mb-6 flex items-center gap-4">
+              <div className="flex flex-1 items-center gap-2 border-b border-line pb-2 focus-within:border-pine">
+                <Icon name="search" size={16} className="shrink-0 text-ink-soft" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="search stretches"
+                  className="w-full bg-transparent lowercase placeholder:text-ink-soft/60 focus:outline-none"
+                />
+              </div>
               <button
                 onClick={() => setPickerOpen(false)}
-                className="font-extrabold text-ink-dim"
+                className="text-sm lowercase text-ink-soft hover:text-ink"
               >
-                Done
+                done
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto pb-8">
-              <div className="flex flex-col gap-2">
+            <div className="flex-1 overflow-y-auto pb-10">
+              <div className="border-t border-line-soft">
                 {filtered.map((exercise) => (
                   <button
                     key={exercise.id}
@@ -202,16 +211,18 @@ export function BuilderPage() {
                         { exerciseId: exercise.id, durationSec: exercise.defaultDurationSec },
                       ])
                     }
-                    className="flex items-center gap-3 rounded-2xl bg-card p-3 text-left active:bg-card-hover"
+                    className="flex w-full items-center gap-4 border-b border-line-soft py-4 text-left hover:bg-surface"
                   >
-                    <ExerciseArt art={exercise.art} />
+                    <BodyMark areas={exercise.targetAreas} />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-extrabold">{exercise.name}</h3>
-                      <p className="text-xs font-semibold text-ink-dim">
+                      <h3 className="text-base lowercase">{exercise.name}</h3>
+                      <p className="mt-0.5 text-xs lowercase text-ink-soft">
                         {exercise.targetAreas.map(formatAreaLabel).join(' · ')}
                       </p>
                     </div>
-                    <span className="text-xl text-brand">＋</span>
+                    <span className="text-ink-soft">
+                      <Icon name="plus" size={16} />
+                    </span>
                   </button>
                 ))}
               </div>

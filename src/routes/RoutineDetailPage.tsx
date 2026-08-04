@@ -5,7 +5,8 @@ import { EXERCISE_BY_ID } from '../data/exercises';
 import { routineActiveSec, routineTotalSec } from '../session/timeline';
 import { computeXp } from '../game/xp';
 import { initAudio } from '../session/audio';
-import { ExerciseArt } from '../components/ExerciseArt';
+import { BodyMark } from '../components/BodyMark';
+import { Icon } from '../components/Icon';
 import { CATEGORY_META } from '../components/RoutineCard';
 import { formatMinutes } from '../lib/format';
 
@@ -20,10 +21,10 @@ export function RoutineDetailPage() {
   const routine = id ? getRoutine(id) : undefined;
   if (!routine) {
     return (
-      <main className="px-4 pt-10 text-center">
-        <p className="font-bold text-ink-dim">Routine not found.</p>
-        <Link to="/routines" className="mt-4 inline-block font-extrabold text-brand">
-          Back to library
+      <main className="px-6 pt-16 text-center">
+        <p className="text-ink-soft">Routine not found.</p>
+        <Link to="/routines" className="mt-6 inline-block lowercase text-pine-deep">
+          back to library
         </Link>
       </main>
     );
@@ -42,47 +43,70 @@ export function RoutineDetailPage() {
   }).total;
 
   return (
-    <main className="px-4 pb-40 pt-6">
-      <button onClick={() => navigate(-1)} className="mb-3 text-sm font-extrabold text-ink-dim">
-        ‹ Back
+    <main className="px-6 pb-44 pt-8">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-8 flex items-center gap-1 text-sm lowercase text-ink-soft hover:text-ink"
+      >
+        <Icon name="chevronLeft" size={16} />
+        back
       </button>
-      <div className="mb-1 flex items-center gap-2">
-        <span className="text-3xl">{meta.emoji}</span>
-        <h1 className="text-2xl font-extrabold">{routine.name}</h1>
-      </div>
-      <p className="mb-3 text-sm font-semibold text-ink-dim">{routine.description}</p>
-      <div className="mb-5 flex gap-2 text-xs font-extrabold">
-        <span className="rounded-full bg-card px-3 py-1.5">⏱ {formatMinutes(total)}</span>
-        <span className="rounded-full bg-card px-3 py-1.5">🧘 {routine.steps.length} stretches</span>
-        <span className="rounded-full bg-card px-3 py-1.5 text-gold">⚡ ~{estXp} XP</span>
-      </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="mb-2 flex items-center gap-2.5">
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: meta.color }}
+          aria-hidden="true"
+        />
+        <span className="text-xs lowercase text-ink-soft">{meta.label}</span>
+      </div>
+      <h1 className="text-2xl lowercase">{routine.name}</h1>
+      <p className="measure mt-3 text-sm leading-relaxed text-ink-soft">{routine.description}</p>
+
+      <dl className="mt-8 flex gap-10 border-y border-line-soft py-4 text-sm lowercase">
+        <div>
+          <dt className="text-xs text-ink-soft">duration</dt>
+          <dd className="mt-1">{formatMinutes(total)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-ink-soft">stretches</dt>
+          <dd className="mt-1">{routine.steps.length}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-ink-soft">earns</dt>
+          <dd className="mt-1">~{estXp} xp</dd>
+        </div>
+      </dl>
+
+      <ol className="mt-6">
         {routine.steps.map((step, i) => {
           const exercise = EXERCISE_BY_ID[step.exerciseId];
           if (!exercise) return null;
           return (
-            <div key={i} className="flex items-center gap-3 rounded-2xl bg-card p-3">
-              <ExerciseArt art={exercise.art} />
+            <li key={i} className="flex items-center gap-5 border-b border-line-soft py-4">
+              <BodyMark areas={exercise.targetAreas} />
               <div className="min-w-0 flex-1">
-                <h3 className="font-extrabold">{exercise.name}</h3>
-                <p className="text-xs font-semibold text-ink-dim">
+                <h3 className="text-base lowercase">{exercise.name}</h3>
+                <p className="mt-0.5 text-xs lowercase text-ink-soft">
                   {step.durationSec}s{exercise.side === 'per-side' ? ' per side' : ''}
                 </p>
               </div>
-              <span className="text-sm font-extrabold text-ink-dim">{i + 1}</span>
-            </div>
+              <span className="text-sm tabular-nums text-line">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ol>
 
       {routine.isCustom && (
-        <div className="mt-4 flex gap-2">
+        <div className="mt-8 flex gap-3">
           <Link
             to={`/builder/${routine.id}`}
-            className="flex-1 rounded-2xl bg-card py-3 text-center font-extrabold"
+            className="flex flex-1 items-center justify-center gap-2 border border-line py-3 text-sm lowercase hover:bg-surface"
           >
-            ✏️ Edit
+            <Icon name="pencil" size={16} />
+            edit
           </Link>
           <button
             onClick={() => {
@@ -91,20 +115,22 @@ export function RoutineDetailPage() {
                 navigate('/routines');
               }
             }}
-            className="flex-1 rounded-2xl bg-card py-3 font-extrabold text-red-400"
+            className="flex flex-1 items-center justify-center gap-2 border border-line py-3 text-sm lowercase text-clay hover:bg-surface"
           >
-            🗑 Delete
+            <Icon name="trash" size={16} />
+            delete
           </button>
         </div>
       )}
 
-      <div className="fixed bottom-16 left-0 right-0 z-10 mx-auto max-w-md px-4 pb-4">
+      <div className="fixed inset-x-0 bottom-16 z-10 mx-auto max-w-md bg-gradient-to-t from-paper via-paper to-transparent px-6 pb-5 pt-14">
         <Link
           to={`/session/${routine.id}`}
           onClick={() => initAudio()}
-          className="block rounded-2xl bg-brand py-4 text-center text-lg font-extrabold text-surface shadow-lg shadow-brand/30 transition-transform active:scale-[0.98]"
+          className="flex items-center justify-center gap-2.5 bg-pine-deep py-4 text-base lowercase tracking-wide text-paper hover:brightness-110"
         >
-          Start session ▶
+          <Icon name="play" size={17} />
+          begin
         </Link>
       </div>
     </main>

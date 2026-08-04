@@ -32,29 +32,38 @@ export function HeatmapCalendar({ sessions, frozenDateKeys, weeks = 16 }: Props)
 
   function cellClass(day: string): string {
     const active = activeByDay.get(day) ?? 0;
-    if (active >= 900) return 'bg-brand';
-    if (active >= 450) return 'bg-brand/70';
-    if (active > 0) return 'bg-brand/40';
-    return 'bg-line/50';
+    if (active >= 900) return 'bg-pine';
+    if (active >= 450) return 'bg-pine/60';
+    if (active > 0) return 'bg-pine/30';
+    return 'bg-line-soft';
   }
 
   return (
     <div className="overflow-x-auto">
-      <div className="flex gap-1">
+      <div className="flex gap-[3px]">
         {columns.map((week, i) => (
-          <div key={i} className="flex flex-col gap-1">
+          <div key={i} className="flex flex-col gap-[3px]">
             {week.map((day) => {
               const future = day > todayKeyStr;
+              // Frozen days get a hollow fjord square instead of a fill, so
+              // they read as "held" rather than "earned".
+              const isFrozen = !future && frozen.has(day);
               return (
                 <div
                   key={day}
                   title={day}
-                  className={`flex h-4 w-4 items-center justify-center rounded-[4px] text-[9px] leading-none ${
-                    future ? 'bg-transparent' : cellClass(day)
-                  } ${day === todayKeyStr ? 'ring-1 ring-ink' : ''}`}
-                >
-                  {!future && frozen.has(day) ? '❄️' : ''}
-                </div>
+                  className={`h-4 w-4 ${
+                    future
+                      ? 'bg-transparent'
+                      : isFrozen
+                        ? 'border border-fjord bg-transparent'
+                        : cellClass(day)
+                  } ${
+                    day === todayKeyStr
+                      ? 'outline outline-1 outline-offset-1 outline-ink-soft'
+                      : ''
+                  }`}
+                />
               );
             })}
           </div>

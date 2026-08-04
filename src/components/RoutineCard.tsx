@@ -3,15 +3,14 @@ import type { Routine } from '../types';
 import { useSettingsStore } from '../store/settingsStore';
 import { routineTotalSec } from '../session/timeline';
 import { formatMinutes } from '../lib/format';
+import { Icon } from './Icon';
 
-export const CATEGORY_META: Record<
-  Routine['category'],
-  { label: string; emoji: string; color: string }
-> = {
-  climbing: { label: 'Climbing', emoji: '🧗', color: '#f59e0b' },
-  running: { label: 'Running', emoji: '🏃', color: '#3b82f6' },
-  'full-body': { label: 'Full body', emoji: '🧘', color: '#10b981' },
-  custom: { label: 'My routine', emoji: '⭐', color: '#ec4899' },
+/** Colors are marks only — never text — so they stay quiet and pass contrast. */
+export const CATEGORY_META: Record<Routine['category'], { label: string; color: string }> = {
+  climbing: { label: 'climbing', color: 'var(--color-bark)' },
+  running: { label: 'running', color: 'var(--color-fjord)' },
+  'full-body': { label: 'full body', color: 'var(--color-pine)' },
+  custom: { label: 'my routine', color: 'var(--color-stone)' },
 };
 
 export function RoutineCard({ routine }: { routine: Routine }) {
@@ -22,23 +21,22 @@ export function RoutineCard({ routine }: { routine: Routine }) {
   return (
     <Link
       to={`/routines/${routine.id}`}
-      className="block rounded-2xl bg-card p-4 transition-colors hover:bg-card-hover active:scale-[0.98]"
+      className="group flex items-center gap-4 border-b border-line-soft py-4 hover:bg-surface"
     >
-      <div className="flex items-center gap-3">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
-          style={{ backgroundColor: `${meta.color}26` }}
-        >
-          {meta.emoji}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate font-extrabold">{routine.name}</h3>
-          <p className="text-xs font-semibold text-ink-dim">
-            {routine.steps.length} stretches · {formatMinutes(total)}
-          </p>
-        </div>
-        <span className="text-ink-dim">›</span>
+      <span
+        className="h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{ backgroundColor: meta.color }}
+        aria-hidden="true"
+      />
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-base lowercase">{routine.name}</h3>
+        <p className="mt-0.5 text-xs lowercase text-ink-soft">
+          {meta.label} · {routine.steps.length} stretches · {formatMinutes(total)}
+        </p>
       </div>
+      <span className="text-line group-hover:text-ink-soft">
+        <Icon name="chevronRight" size={18} />
+      </span>
     </Link>
   );
 }

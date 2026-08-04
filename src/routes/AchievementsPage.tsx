@@ -7,12 +7,12 @@ export function AchievementsPage() {
   const unlockedCount = Object.keys(unlockedBadges).length;
 
   return (
-    <main className="px-4 pb-24 pt-6">
-      <h1 className="text-2xl font-extrabold">Achievements</h1>
-      <p className="mb-4 text-sm font-semibold text-ink-dim">
+    <main className="px-6 pb-28 pt-10">
+      <h1 className="text-2xl lowercase tracking-wide">awards</h1>
+      <p className="mb-10 mt-1 text-sm lowercase text-ink-soft">
         {unlockedCount} of {ACHIEVEMENTS.length} unlocked
       </p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         {ACHIEVEMENTS.map((a) => (
           <BadgeCard key={a.id} achievement={a} unlockedAt={unlockedBadges[a.id]} />
         ))}

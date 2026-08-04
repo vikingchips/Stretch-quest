@@ -16,64 +16,60 @@ export function StatsPage() {
   }));
   const maxCount = Math.max(1, ...byCategory.map((c) => c.count));
 
+  const totals: Array<[string, string | number]> = [
+    ['sessions', sessions.length],
+    ['stretched', formatMinutes(totalActiveSec)],
+    ['best streak', progress.longestStreak],
+  ];
+
   return (
-    <main className="px-4 pb-24 pt-6">
-      <h1 className="mb-4 text-2xl font-extrabold">Stats</h1>
+    <main className="px-6 pb-28 pt-10">
+      <h1 className="mb-10 text-2xl lowercase tracking-wide">stats</h1>
 
-      <section className="mb-5 grid grid-cols-3 gap-2">
-        <div className="rounded-2xl bg-card p-3 text-center">
-          <div className="text-2xl font-extrabold text-brand">{sessions.length}</div>
-          <div className="text-[11px] font-bold text-ink-dim">sessions</div>
-        </div>
-        <div className="rounded-2xl bg-card p-3 text-center">
-          <div className="text-2xl font-extrabold text-frost">
-            {formatMinutes(totalActiveSec)}
+      <dl className="mb-14 grid grid-cols-3 gap-6 border-y border-line-soft py-6">
+        {totals.map(([label, value]) => (
+          <div key={label}>
+            <dd className="text-2xl leading-none tabular-nums">{value}</dd>
+            <dt className="mt-2 text-[11px] lowercase text-ink-soft">{label}</dt>
           </div>
-          <div className="text-[11px] font-bold text-ink-dim">stretched</div>
-        </div>
-        <div className="rounded-2xl bg-card p-3 text-center">
-          <div className="text-2xl font-extrabold text-flame">{progress.longestStreak}</div>
-          <div className="text-[11px] font-bold text-ink-dim">best streak</div>
-        </div>
-      </section>
+        ))}
+      </dl>
 
-      <section className="mb-5 rounded-2xl bg-card p-4">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-ink-dim">
-          Last 16 weeks
-        </h2>
+      <section className="mb-14">
+        <h2 className="mb-4 text-sm lowercase text-ink-soft">last 16 weeks</h2>
         <HeatmapCalendar sessions={sessions} frozenDateKeys={progress.frozenDateKeys} />
-        <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-ink-dim">
-          <span>Less</span>
-          <span className="h-3 w-3 rounded-[3px] bg-line/50" />
-          <span className="h-3 w-3 rounded-[3px] bg-brand/40" />
-          <span className="h-3 w-3 rounded-[3px] bg-brand/70" />
-          <span className="h-3 w-3 rounded-[3px] bg-brand" />
-          <span>More</span>
-          <span className="ml-2">❄️ = streak freeze</span>
+        <div className="mt-4 flex items-center gap-2 text-[10px] lowercase text-ink-soft">
+          <span>less</span>
+          <span className="h-3 w-3 bg-line-soft" />
+          <span className="h-3 w-3 bg-pine/30" />
+          <span className="h-3 w-3 bg-pine/60" />
+          <span className="h-3 w-3 bg-pine" />
+          <span>more</span>
+          <span className="ml-3 flex items-center gap-1.5">
+            <span className="h-3 w-3 border border-fjord" />
+            streak freeze
+          </span>
         </div>
       </section>
 
-      <section className="rounded-2xl bg-card p-4">
-        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-ink-dim">
-          Sessions by type
-        </h2>
-        <div className="flex flex-col gap-2">
+      <section>
+        <h2 className="mb-4 text-sm lowercase text-ink-soft">sessions by type</h2>
+        <div className="flex flex-col gap-4">
           {byCategory.map(({ category, count }) => {
             const meta = CATEGORY_META[category];
             return (
-              <div key={category} className="flex items-center gap-2">
-                <span className="w-6 text-center">{meta.emoji}</span>
-                <div className="h-5 flex-1 overflow-hidden rounded-full bg-line/40">
+              <div key={category} className="flex items-center gap-4">
+                <span className="w-20 text-xs lowercase text-ink-soft">{meta.label}</span>
+                <div className="h-2 flex-1 bg-line-soft">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
+                    className="h-2 transition-all duration-700 ease-in-out"
                     style={{
                       width: `${(count / maxCount) * 100}%`,
                       backgroundColor: meta.color,
-                      minWidth: count > 0 ? '1.25rem' : 0,
                     }}
                   />
                 </div>
-                <span className="w-8 text-right text-sm font-extrabold">{count}</span>
+                <span className="w-6 text-right text-sm tabular-nums">{count}</span>
               </div>
             );
           })}

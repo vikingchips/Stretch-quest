@@ -1,77 +1,84 @@
 @import 'tailwindcss';
 
+/* Jost (SIL Open Font License 1.1), self-hosted so the PWA keeps its
+   typography offline. Variable axis 200–500; we only ever use 200 and 300. */
+@font-face {
+  font-family: 'Jost';
+  font-style: normal;
+  font-weight: 200 500;
+  font-display: swap;
+  src: url('./fonts/jost-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Jost';
+  font-style: normal;
+  font-weight: 200 500;
+  font-display: swap;
+  src: url('./fonts/jost-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
 @theme {
-  --color-surface: #0f172a;
-  --color-card: #1e293b;
-  --color-card-hover: #273449;
-  --color-line: #334155;
-  --color-brand: #22c55e;
-  --color-brand-dark: #16a34a;
-  --color-flame: #f97316;
-  --color-frost: #38bdf8;
-  --color-gold: #facc15;
-  --color-ink: #f1f5f9;
-  --color-ink-dim: #94a3b8;
-  --font-display: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Warm neutrals */
+  --color-paper: #f5f0eb;
+  --color-surface: #fbf8f5;
+  --color-line: #d4cdc5;
+  --color-line-soft: #e5dfd8;
+  --color-ink: #3d3d3d;
+  --color-ink-soft: #6b6560;
+
+  /* Naturals. The -deep variants are the text-safe ones (>= 4.5:1 on paper);
+     the base tones are for fills, rings and marks only. */
+  --color-pine: #5a7a6b;
+  --color-pine-deep: #47614f;
+  --color-fjord: #7ba0b8;
+  --color-fjord-deep: #4f7186;
+  --color-clay: #8c5148;
+
+  /* Muted category tones — fills only, never text. */
+  --color-bark: #8a6f4e;
+  --color-stone: #8f8578;
+
+  --font-sans: 'Jost', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 html {
-  background-color: var(--color-surface);
+  background-color: var(--color-paper);
 }
 
 body {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
+  font-weight: 200;
   color: var(--color-ink);
+  letter-spacing: 0.01em;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
 
-@keyframes pop-in {
-  0% {
-    transform: scale(0.3);
+/* Morning fog: everything that moves, moves slowly and without overshoot. */
+a,
+button,
+input {
+  transition-property: color, background-color, border-color, opacity, filter;
+  transition-duration: 700ms;
+  transition-timing-function: ease-in-out;
+}
+
+@keyframes reveal {
+  from {
     opacity: 0;
   }
-  70% {
-    transform: scale(1.12);
-  }
-  100% {
-    transform: scale(1);
+  to {
     opacity: 1;
   }
 }
 
-@keyframes flame-pulse {
-  0%,
-  100% {
-    transform: scale(1) rotate(-2deg);
-  }
-  50% {
-    transform: scale(1.12) rotate(2deg);
-  }
-}
-
-@keyframes float-up {
-  0% {
-    transform: translateY(14px);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-pop-in {
-  animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.animate-flame {
-  animation: flame-pulse 1.6s ease-in-out infinite;
-  transform-origin: 50% 85%;
-}
-
-.animate-float-up {
-  animation: float-up 0.4s ease-out both;
+.animate-reveal {
+  animation: reveal 700ms ease-in-out both;
 }
 
 .safe-bottom {
@@ -80,4 +87,19 @@ body {
 
 .safe-top {
   padding-top: env(safe-area-inset-top);
+}
+
+/* Body copy stays inside a comfortable measure. */
+.measure {
+  max-width: 68ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

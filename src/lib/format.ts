@@ -11,6 +11,7 @@ export function formatMinutes(totalSec: number): string {
   return `${min} min`;
 }
 
+/** Body areas read as lowercase labels throughout the UI. */
 export function formatAreaLabel(area: string): string {
-  return area.charAt(0).toUpperCase() + area.slice(1);
+  return area.replace('-', ' ');
 }

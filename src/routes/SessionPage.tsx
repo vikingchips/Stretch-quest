@@ -15,14 +15,15 @@ import {
   playSideSwitch,
 } from '../session/audio';
 import { ScreenWakeLock } from '../session/wakeLock';
-import { ExerciseArt } from '../components/ExerciseArt';
+import { BodyMark } from '../components/BodyMark';
+import { Icon } from '../components/Icon';
 import { formatClock } from '../lib/format';
 
 const KIND_STYLE: Record<string, { label: string; color: string }> = {
-  prep: { label: 'Get ready', color: 'var(--color-gold)' },
-  stretch: { label: 'Stretch', color: 'var(--color-brand)' },
-  switch: { label: 'Switch sides', color: 'var(--color-gold)' },
-  rest: { label: 'Rest', color: 'var(--color-frost)' },
+  prep: { label: 'get ready', color: 'var(--color-fjord-deep)' },
+  stretch: { label: 'stretch', color: 'var(--color-pine-deep)' },
+  switch: { label: 'switch sides', color: 'var(--color-fjord-deep)' },
+  rest: { label: 'rest', color: 'var(--color-ink-soft)' },
 };
 
 export function SessionPage() {
@@ -92,8 +93,8 @@ export function SessionPage() {
 
   if (!routine || segments.length === 0) {
     return (
-      <main className="flex min-h-dvh items-center justify-center px-4">
-        <p className="font-bold text-ink-dim">Routine not found.</p>
+      <main className="flex min-h-dvh items-center justify-center px-6">
+        <p className="text-ink-soft">Routine not found.</p>
       </main>
     );
   }
@@ -110,115 +111,115 @@ export function SessionPage() {
   const progressPct = Math.round(overallProgress(state) * 100);
 
   return (
-    <main className="flex min-h-dvh flex-col px-4 pb-8 pt-4">
-      <div className="mb-4 flex items-center gap-3">
+    <main className="flex min-h-dvh flex-col px-6 pb-10 pt-6">
+      <div className="mb-10 flex items-center gap-4">
         <button
           onClick={() => setConfirmQuit(true)}
-          className="text-xl text-ink-dim"
+          className="text-ink-soft hover:text-ink"
           aria-label="Quit session"
         >
-          ✕
+          <Icon name="close" size={18} />
         </button>
-        <div className="h-3 flex-1 overflow-hidden rounded-full bg-line/60">
+        <div className="h-px flex-1 bg-line">
           <div
-            className="h-full rounded-full bg-brand transition-all duration-300"
+            className="h-px bg-pine transition-all duration-700 ease-in-out"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="text-xs font-extrabold text-ink-dim">
+        <span className="text-xs tabular-nums text-ink-soft">
           {Math.min(state.completedSteps.length + 1, routine.steps.length)}/{routine.steps.length}
         </span>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <span
-          className="mb-3 rounded-full px-4 py-1 text-sm font-extrabold uppercase tracking-wider"
-          style={{ backgroundColor: `${style.color.startsWith('var') ? 'transparent' : style.color}`, color: style.color, border: `2px solid ${style.color}` }}
-        >
+        <span className="text-xs lowercase tracking-[0.18em]" style={{ color: style.color }}>
           {style.label}
           {segment.sideLabel ? ` · ${segment.sideLabel}` : ''}
         </span>
 
         {segment.kind === 'stretch' && exercise ? (
           <>
-            <ExerciseArt art={exercise.art} size="xl" />
-            <h1 className="mt-4 text-2xl font-extrabold">{exercise.name}</h1>
-            <p className="mt-2 max-w-sm text-sm font-medium leading-relaxed text-ink-dim">
+            <div className="mt-10">
+              <BodyMark areas={exercise.targetAreas} size="xl" />
+            </div>
+            <h1 className="mt-8 text-2xl lowercase">{exercise.name}</h1>
+            <p className="measure mt-3 text-sm leading-relaxed text-ink-soft">
               {exercise.instructions}
             </p>
           </>
         ) : (
-          <>
-            <div className="flex h-40 w-40 items-center justify-center text-8xl">
-              {segment.kind === 'rest' ? '😮‍💨' : segment.kind === 'switch' ? '🔁' : '🚦'}
-            </div>
-            {upNextExercise && (
-              <p className="mt-4 text-sm font-bold text-ink-dim">
-                Up next: <span className="text-ink">{upNextExercise.name}</span>
-                {upNext?.sideLabel ? ` (${upNext.sideLabel})` : ''}
-              </p>
+          <div className="mt-10 flex h-48 flex-col items-center justify-center">
+            {upNextExercise ? (
+              <>
+                <span className="text-xs lowercase text-ink-soft">up next</span>
+                <p className="mt-2 text-xl lowercase">
+                  {upNextExercise.name}
+                  {upNext?.sideLabel ? ` · ${upNext.sideLabel}` : ''}
+                </p>
+              </>
+            ) : (
+              <span className="text-sm lowercase text-ink-soft">breathe</span>
             )}
-          </>
+          </div>
         )}
 
-        <div
-          className="mt-6 text-7xl font-extrabold tabular-nums"
-          style={{ color: style.color }}
-        >
+        <div className="mt-10 text-7xl tabular-nums leading-none">
           {formatClock(state.remainingMs / 1000)}
         </div>
+
         {exercise?.tips && segment.kind === 'stretch' && (
-          <p className="mt-3 max-w-sm text-xs font-semibold text-ink-dim">💡 {exercise.tips}</p>
+          <p className="measure mt-6 border-t border-line-soft pt-4 text-xs leading-relaxed text-ink-soft">
+            {exercise.tips}
+          </p>
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-6">
+      <div className="mt-10 flex items-center justify-center gap-8">
         <button
           onClick={() => dispatch({ type: 'BACK' })}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-card text-2xl active:scale-95"
+          className="border border-line p-4 text-ink-soft hover:bg-surface hover:text-ink"
           aria-label="Previous"
         >
-          ⏮
+          <Icon name="prev" size={18} />
         </button>
         <button
           onClick={() => {
             initAudio();
             dispatch({ type: paused ? 'RESUME' : 'PAUSE' });
           }}
-          className="flex h-20 w-20 items-center justify-center rounded-full bg-brand text-4xl text-surface shadow-lg shadow-brand/30 active:scale-95"
+          className="bg-pine-deep p-6 text-paper hover:brightness-110"
           aria-label={paused ? 'Resume' : 'Pause'}
         >
-          {paused ? '▶' : '⏸'}
+          <Icon name={paused ? 'play' : 'pause'} size={24} strokeWidth={1.4} />
         </button>
         <button
           onClick={() => dispatch({ type: 'SKIP' })}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-card text-2xl active:scale-95"
+          className="border border-line p-4 text-ink-soft hover:bg-surface hover:text-ink"
           aria-label="Skip"
         >
-          ⏭
+          <Icon name="next" size={18} />
         </button>
       </div>
 
       {confirmQuit && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-surface/80 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-3xl bg-card p-6 text-center animate-pop-in">
-            <span className="text-4xl">🥺</span>
-            <h2 className="mt-2 text-lg font-extrabold">Quit this session?</h2>
-            <p className="mt-1 text-sm font-semibold text-ink-dim">
-              Progress from this session won't be saved.
+        <div className="animate-reveal fixed inset-0 z-30 flex items-center justify-center bg-paper/90 px-8 backdrop-blur-sm">
+          <div className="w-full max-w-sm border border-line bg-surface p-8 text-center">
+            <h2 className="text-lg lowercase">leave this session?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+              Nothing from this session will be saved.
             </p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-8 flex flex-col gap-3">
               <button
                 onClick={() => setConfirmQuit(false)}
-                className="flex-1 rounded-2xl bg-brand py-3 font-extrabold text-surface"
+                className="bg-pine-deep py-3 text-sm lowercase tracking-wide text-paper hover:brightness-110"
               >
-                Keep going
+                keep stretching
               </button>
               <button
                 onClick={() => navigate(-1)}
-                className="flex-1 rounded-2xl bg-line/60 py-3 font-extrabold text-ink-dim"
+                className="border border-line py-3 text-sm lowercase text-ink-soft hover:bg-paper hover:text-ink"
               >
-                Quit
+                leave
               </button>
             </div>
           </div>

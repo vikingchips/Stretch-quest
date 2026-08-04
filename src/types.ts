@@ -1,3 +1,5 @@
+import type { IconName } from './components/Icon';
+
 export type BodyArea =
   | 'neck'
   | 'shoulders'
@@ -18,22 +20,15 @@ export type BodyArea =
 /** 'per-side' exercises are performed left then right. */
 export type Side = 'both' | 'per-side';
 
-export interface ExerciseArt {
-  kind: 'emoji';
-  value: string;
-  /** Accent color hex used behind the art. */
-  accent: string;
-}
-
 export interface Exercise {
   id: string;
   name: string;
   instructions: string;
+  /** Also drives the body diagram — the first areas listed are highlighted. */
   targetAreas: BodyArea[];
   /** Seconds per side when side === 'per-side'. */
   defaultDurationSec: number;
   side: Side;
-  art: ExerciseArt;
   tips?: string;
 }
 
@@ -99,7 +94,7 @@ export interface Achievement {
   id: string;
   name: string;
   description: string;
-  emoji: string;
+  icon: IconName;
 }
 
 /** Summary passed from the session player to the completion screen. */

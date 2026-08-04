@@ -2,14 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import type { SessionSummary } from '../types';
 import { ACHIEVEMENT_BY_ID } from '../data/achievements';
-import { ConfettiBurst } from '../components/ConfettiBurst';
-import { StreakFlame } from '../components/StreakFlame';
+import { StreakStat } from '../components/StreakStat';
+import { Icon } from '../components/Icon';
 import { formatMinutes } from '../lib/format';
 
-function useCountUp(target: number, durationMs = 900): number {
+/** Eases to the total over ~1.4s — a slow settle, not a slot machine. */
+function useCountUp(target: number, durationMs = 1400): number {
   const [value, setValue] = useState(0);
   useEffect(() => {
     if (target === 0) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      setValue(target);
+      return;
+    }
     const start = performance.now();
     let raf: number;
     const step = (now: number) => {
@@ -35,73 +41,74 @@ export function CompletePage() {
   const leveledUp = levelAfter > levelBefore;
 
   const rows: Array<[string, number]> = [
-    ['Session complete', xpBreakdown.base],
-    [`Stretch time (${formatMinutes(record.activeSec)})`, xpBreakdown.activeTime],
-    ['No skips', xpBreakdown.noSkipBonus],
-    ['Daily goal met', xpBreakdown.goalBonus],
-    ['Streak milestone', xpBreakdown.streakMilestoneBonus],
+    ['session complete', xpBreakdown.base],
+    [`stretch time (${formatMinutes(record.activeSec)})`, xpBreakdown.activeTime],
+    ['no skips', xpBreakdown.noSkipBonus],
+    ['daily goal met', xpBreakdown.goalBonus],
+    ['streak milestone', xpBreakdown.streakMilestoneBonus],
   ];
 
   return (
-    <main className="flex min-h-dvh flex-col items-center px-4 pb-10 pt-14 text-center">
-      <ConfettiBurst variant="big" />
-      <span className="text-6xl animate-pop-in">🎉</span>
-      <h1 className="mt-3 text-3xl font-extrabold">Nice stretch!</h1>
-      <p className="mt-1 text-sm font-semibold text-ink-dim">{record.routineName}</p>
+    <main className="animate-reveal flex min-h-dvh flex-col items-center px-6 pb-12 pt-20 text-center">
+      <h1 className="text-2xl lowercase">that's done</h1>
+      <p className="mt-2 text-sm lowercase text-ink-soft">{record.routineName}</p>
 
-      <div className="mt-6 text-5xl font-extrabold text-gold">+{xpShown} XP</div>
+      <div className="mt-12 text-6xl leading-none tabular-nums">+{xpShown}</div>
+      <div className="mt-2 text-xs lowercase tracking-[0.18em] text-ink-soft">xp</div>
 
       {xpBreakdown.total > 0 ? (
-        <div className="mt-4 w-full max-w-sm rounded-2xl bg-card p-4 text-left">
+        <dl className="mt-10 w-full max-w-sm border-t border-line-soft text-left">
           {rows.map(
             ([label, xp]) =>
               xp > 0 && (
-                <div key={label} className="flex justify-between py-1 text-sm font-bold">
-                  <span className="text-ink-dim">{label}</span>
-                  <span className="text-gold">+{xp}</span>
+                <div
+                  key={label}
+                  className="flex justify-between border-b border-line-soft py-2.5 text-sm lowercase"
+                >
+                  <dt className="text-ink-soft">{label}</dt>
+                  <dd className="tabular-nums">+{xp}</dd>
                 </div>
               ),
           )}
-        </div>
+        </dl>
       ) : (
-        <p className="mt-4 max-w-sm text-sm font-semibold text-ink-dim">
-          Sessions need at least 1 minute of stretching to earn XP and keep the streak alive.
+        <p className="measure mt-8 text-sm leading-relaxed text-ink-soft">
+          Sessions need at least a minute of stretching to earn XP and hold the streak.
         </p>
       )}
 
       {leveledUp && (
-        <div className="mt-4 w-full max-w-sm rounded-2xl bg-gold/15 p-4 font-extrabold text-gold animate-pop-in">
-          ⬆️ Level up! You reached level {levelAfter}
-        </div>
+        <p className="mt-8 text-sm lowercase text-pine-deep">
+          level {levelAfter} reached
+        </p>
       )}
 
-      <div className="mt-6 animate-pop-in" style={{ animationDelay: '0.3s' }}>
-        <StreakFlame streak={streakAfter} size="lg" />
+      <div className="mt-14">
+        <StreakStat streak={streakAfter} size="lg" />
       </div>
 
       {goalMetNow && (
-        <div className="mt-3 text-sm font-extrabold text-brand">✅ Daily goal smashed!</div>
+        <p className="mt-6 inline-flex items-center gap-2 text-sm lowercase text-pine-deep">
+          <Icon name="check" size={15} />
+          daily goal met
+        </p>
       )}
 
       {newBadgeIds.length > 0 && (
-        <div className="mt-6 w-full max-w-sm">
-          <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-ink-dim">
-            New badges
-          </h2>
-          <div className="flex flex-col gap-2">
-            {newBadgeIds.map((id, i) => {
+        <div className="mt-14 w-full max-w-sm text-left">
+          <h2 className="mb-1 text-sm lowercase text-ink-soft">new badges</h2>
+          <div className="border-t border-line-soft">
+            {newBadgeIds.map((id) => {
               const badge = ACHIEVEMENT_BY_ID[id];
               if (!badge) return null;
               return (
-                <div
-                  key={id}
-                  className="flex items-center gap-3 rounded-2xl bg-card p-3 text-left animate-pop-in"
-                  style={{ animationDelay: `${0.45 + i * 0.18}s` }}
-                >
-                  <span className="text-3xl">{badge.emoji}</span>
+                <div key={id} className="flex items-center gap-4 border-b border-line-soft py-4">
+                  <span className="text-pine">
+                    <Icon name={badge.icon} size={26} strokeWidth={1.15} />
+                  </span>
                   <div>
-                    <div className="font-extrabold">{badge.name}</div>
-                    <div className="text-xs font-semibold text-ink-dim">{badge.description}</div>
+                    <div className="text-sm lowercase">{badge.name}</div>
+                    <div className="mt-0.5 text-xs text-ink-soft">{badge.description}</div>
                   </div>
                 </div>
               );
@@ -112,9 +119,9 @@ export function CompletePage() {
 
       <Link
         to="/"
-        className="mt-8 w-full max-w-sm rounded-2xl bg-brand py-4 text-lg font-extrabold text-surface shadow-lg shadow-brand/30 active:scale-[0.98]"
+        className="mt-16 w-full max-w-sm bg-pine-deep py-4 text-sm lowercase tracking-wide text-paper hover:brightness-110"
       >
-        Continue
+        done
       </Link>
     </main>
   );
