@@ -18,17 +18,25 @@ for everything else.
 - **PWA** — installable on iOS/Android home screens, fully offline after the
   first visit. Architected so it can later be wrapped with Capacitor for the
   app stores.
-- **Optional accounts** — a name and a four-digit code backs your history up
-  and carries it to another device. No email anywhere. Off by default; see
-  below.
+- **Accounts** — a name and a four-digit code. Required once the build has
+  Supabase credentials; your history lives on the account rather than the
+  device. No email anywhere. See below.
 - **Friends** — share a link, follow each other, and see who is actually
   keeping their routine this week.
-- **First-run tour** — four pages explaining the timing split, shown once.
+- **First-run tour** — four pages explaining the timing split, shown once,
+before the sign-in gate.
 
-## Sync (optional)
+## Sync and accounts
 
-The app is complete without it: data lives in localStorage, works offline, no
-account. An account only adds a backup that follows you to another device.
+Signing in is required in any build that has Supabase credentials. The gate
+lives in `App.tsx`, in front of the router: it replaces the content without
+navigating, so the URL survives it and someone arriving on a shared friend
+link lands on that link once they are through.
+
+A build **without** credentials stays local-only and ungated — otherwise
+`npm run dev` without secrets would be a brick. localStorage remains the
+working copy either way; the cloud is a backup, not the source of truth, so
+the app keeps running offline once signed in.
 
 Sign-in is **a name and a four-digit code**. No email is involved anywhere —
 which is the point, because every free email path in 2026 dead-ends without a
@@ -51,11 +59,9 @@ Names fold to a stable key: lowercase, accents stripped, everything else
 collapsed to dashes. "Måns Brandt", "måns brandt" and "Måns-Brandt" are one
 account. Two people who want the same name cannot both have it.
 
-When `VITE_SUPABASE_URL` and a public key are absent, the Supabase
-SDK is tree-shaken out of the bundle entirely and the account panel says so.
-When present, the SDK loads on demand — a separate ~53 kB chunk fetched only
-when you open Settings or already have a session — so visitors who never sign
-in do not pay for it.
+When `VITE_SUPABASE_URL` and a public key are absent, the Supabase SDK is
+tree-shaken out of the bundle entirely. When present it loads as a separate
+~53 kB chunk.
 
 **Setup, once:**
 

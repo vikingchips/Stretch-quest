@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../sync/authStore';
 import { syncConfigured } from '../sync/client';
 import { findBySlug, sendRequest } from '../sync/friends';
@@ -65,23 +65,10 @@ export function AddFriendPage() {
     <main className="flex min-h-dvh flex-col justify-center px-6 pb-28">
       <h1 className="text-2xl lowercase">follow a friend</h1>
 
-      {!syncConfigured ? (
+      {!syncConfigured || status !== 'signed-in' ? (
         <p className="measure mt-4 leading-relaxed text-ink-soft">
           This build has no sync credentials, so friends are unavailable.
         </p>
-      ) : status !== 'signed-in' ? (
-        <>
-          <p className="measure mt-4 leading-relaxed text-ink-soft">
-            Someone shared their link with you. Create an account — a name and four digits —
-            and open the link again to follow them.
-          </p>
-          <Link
-            to="/settings"
-            className="mt-8 block bg-pine-deep py-3.5 text-center text-sm lowercase tracking-wide text-paper hover:brightness-110"
-          >
-            go to settings
-          </Link>
-        </>
       ) : state.kind === 'looking' ? (
         <p className="mt-4 text-sm lowercase text-ink-soft">looking for {slug}…</p>
       ) : state.kind === 'missing' ? (

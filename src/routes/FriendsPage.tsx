@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuthStore } from '../sync/authStore';
 import { syncConfigured } from '../sync/client';
 import { nameToSlug } from '../sync/identity';
@@ -46,23 +45,16 @@ export function FriendsPage() {
     if (status === 'signed-in') void refresh();
   }, [status, refresh]);
 
+  // Only reachable in a build without credentials; otherwise the gate in
+  // App.tsx guarantees someone is signed in by the time this renders.
   if (!syncConfigured || status !== 'signed-in') {
     return (
       <main className="px-6 pb-28 pt-10">
         <h1 className="mb-8 text-2xl lowercase tracking-wide">friends</h1>
         <p className="measure leading-relaxed text-ink-soft">
-          {syncConfigured
-            ? 'Friends need an account, so there is something to compare. It takes a name and four digits.'
-            : 'This build has no sync credentials, so friends are unavailable. Everything else works offline as usual.'}
+          This build has no sync credentials, so friends are unavailable. Everything else works
+          offline as usual.
         </p>
-        {syncConfigured && (
-          <Link
-            to="/settings"
-            className="mt-8 block border border-line py-3.5 text-center text-sm lowercase hover:bg-surface"
-          >
-            go to settings
-          </Link>
-        )}
       </main>
     );
   }

@@ -3,7 +3,10 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { useProgressStore } from './store/progressStore';
 import { useSettingsStore } from './store/settingsStore';
+import { useAuthStore } from './sync/authStore';
+import { syncConfigured } from './sync/client';
 import { Onboarding } from './components/Onboarding';
+import { AuthScreen } from './components/AuthScreen';
 import { HomePage } from './routes/HomePage';
 import { LibraryPage } from './routes/LibraryPage';
 import { RoutineDetailPage } from './routes/RoutineDetailPage';
@@ -21,10 +24,25 @@ export default function App() {
   const reconcile = useProgressStore((s) => s.reconcile);
   const onboardingSeen = useSettingsStore((s) => s.onboardingSeen);
   const dismissOnboarding = useSettingsStore((s) => s.dismissOnboarding);
+  const authStatus = useAuthStore((s) => s.status);
 
   useEffect(() => {
     reconcile();
   }, [reconcile]);
+
+  // The tour comes first: it explains what the account is for.
+  if (!onboardingSeen) return <Onboarding onDone={dismissOnboarding} />;
+
+  if (syncConfigured) {
+    // Restoring a stored session takes a moment. Showing the sign-in form in
+    // the meantime would flash it at people who are already signed in.
+    if (authStatus === 'loading') {
+      return <div className="min-h-dvh bg-paper" />;
+    }
+    // A build without credentials has nothing to sign in to, so it stays
+    // local-only rather than becoming unusable.
+    if (authStatus !== 'signed-in') return <AuthScreen />;
+  }
 
   const immersive =
     location.pathname.startsWith('/session/') || location.pathname === '/complete';
@@ -46,7 +64,6 @@ export default function App() {
         <Route path="/add/:slug" element={<AddFriendPage />} />
       </Routes>
       {!immersive && <BottomNav />}
-      {!onboardingSeen && <Onboarding onDone={dismissOnboarding} />}
     </div>
   );
 }
