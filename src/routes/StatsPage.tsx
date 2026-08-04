@@ -2,7 +2,8 @@ import { useProgressStore } from '../store/progressStore';
 import { HeatmapCalendar } from '../components/HeatmapCalendar';
 import { CATEGORY_META } from '../components/RoutineCard';
 import type { RoutineCategory } from '../types';
-import { formatMinutes } from '../lib/format';
+import { WEEKLY_TARGET_SEC, weeklyDoseToday } from '../game/dose';
+import { formatAreaLabel, formatMinutes } from '../lib/format';
 
 export function StatsPage() {
   const progress = useProgressStore((s) => s.progress);
@@ -15,6 +16,9 @@ export function StatsPage() {
     count: sessions.filter((s) => s.category === c).length,
   }));
   const maxCount = Math.max(1, ...byCategory.map((c) => c.count));
+
+  const dose = weeklyDoseToday(sessions);
+  const targetMin = Math.round(WEEKLY_TARGET_SEC / 60);
 
   const totals: Array<[string, string | number]> = [
     ['sessions', sessions.length],
@@ -34,6 +38,36 @@ export function StatsPage() {
           </div>
         ))}
       </dl>
+
+      {dose.length > 0 && (
+        <section className="mb-14">
+          <h2 className="text-sm lowercase text-ink-soft">this week, per area</h2>
+          <p className="measure mb-5 mt-1 text-xs leading-relaxed text-ink-soft">
+            Flexibility gains flatten out around {targetMin} minutes per week per area. Past the
+            line you are holding ground, not gaining it.
+          </p>
+          <div className="flex flex-col gap-3">
+            {dose.map((d) => (
+              <div key={d.area} className="flex items-center gap-4">
+                <span className="w-24 shrink-0 text-xs lowercase text-ink-soft">
+                  {formatAreaLabel(d.area)}
+                </span>
+                <div className="relative h-2 flex-1 bg-line-soft">
+                  <div
+                    className={`h-2 transition-all duration-700 ease-in-out ${
+                      d.met ? 'bg-pine' : 'bg-fjord'
+                    }`}
+                    style={{ width: `${d.fraction * 100}%` }}
+                  />
+                </div>
+                <span className="w-12 shrink-0 text-right text-xs tabular-nums text-ink-soft">
+                  {Math.round(d.sec / 60)}m
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mb-14">
         <h2 className="mb-4 text-sm lowercase text-ink-soft">last 16 weeks</h2>

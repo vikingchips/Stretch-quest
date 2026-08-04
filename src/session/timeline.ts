@@ -5,18 +5,28 @@ export type SegmentKind = 'prep' | 'stretch' | 'switch' | 'rest';
 
 export interface Segment {
   kind: SegmentKind;
+  /** For self-paced segments this is an estimate used for progress only. */
   durationSec: number;
   /** Index into routine.steps (the upcoming step for prep/rest segments). */
   stepIndex: number;
   exerciseId?: string;
   sideLabel?: 'Left' | 'Right';
+  /** 1-based set number and total, present when the step has more than one. */
+  setIndex?: number;
+  setTotal?: number;
+  /**
+   * Rep work runs at your own tempo — the clock counts up and waits for you
+   * instead of rushing an eccentric.
+   */
+  selfPaced?: boolean;
+  reps?: number;
 }
 
 export const SWITCH_DURATION_SEC = 3;
 
 /**
- * Flatten a routine into the exact sequence of timed segments:
- * prep -> [stretch (L, switch, R for per-side) -> rest] ... last stretch (no rest).
+ * Flatten a routine into the exact sequence of segments:
+ * prep -> [set (L, switch, R for per-side) -> rest] ... last set (no rest).
  */
 export function buildTimeline(
   routine: Routine,
@@ -31,42 +41,45 @@ export function buildTimeline(
     const exercise = EXERCISE_BY_ID[step.exerciseId];
     if (!exercise) return;
 
-    if (exercise.side === 'per-side') {
-      segments.push({
-        kind: 'stretch',
-        durationSec: step.durationSec,
-        stepIndex,
-        exerciseId: step.exerciseId,
-        sideLabel: 'Left',
-      });
-      segments.push({
-        kind: 'switch',
-        durationSec: SWITCH_DURATION_SEC,
-        stepIndex,
-        exerciseId: step.exerciseId,
-      });
-      segments.push({
-        kind: 'stretch',
-        durationSec: step.durationSec,
-        stepIndex,
-        exerciseId: step.exerciseId,
-        sideLabel: 'Right',
-      });
-    } else {
-      segments.push({
-        kind: 'stretch',
-        durationSec: step.durationSec,
-        stepIndex,
-        exerciseId: step.exerciseId,
-      });
-    }
+    const setTotal = Math.max(1, step.sets ?? 1);
+    const selfPaced = exercise.mode === 'reps';
+    const reps = selfPaced ? (step.reps ?? exercise.defaultReps) : undefined;
 
-    if (stepIndex < routine.steps.length - 1) {
-      segments.push({
-        kind: 'rest',
-        durationSec: settings.restDurationSec,
-        stepIndex: stepIndex + 1,
-      });
+    for (let set = 0; set < setTotal; set++) {
+      const setMeta =
+        setTotal > 1 ? { setIndex: set + 1, setTotal } : ({} as Record<string, never>);
+      const work = {
+        kind: 'stretch' as const,
+        durationSec: step.durationSec,
+        stepIndex,
+        exerciseId: step.exerciseId,
+        ...setMeta,
+        ...(selfPaced ? { selfPaced: true, reps } : {}),
+      };
+
+      if (exercise.side === 'per-side') {
+        segments.push({ ...work, sideLabel: 'Left' });
+        segments.push({
+          kind: 'switch',
+          durationSec: SWITCH_DURATION_SEC,
+          stepIndex,
+          exerciseId: step.exerciseId,
+          ...setMeta,
+        });
+        segments.push({ ...work, sideLabel: 'Right' });
+      } else {
+        segments.push(work);
+      }
+
+      // Rest between sets of the same exercise, and between exercises.
+      const lastSetOfLastStep = set === setTotal - 1 && stepIndex === routine.steps.length - 1;
+      if (!lastSetOfLastStep) {
+        segments.push({
+          kind: 'rest',
+          durationSec: settings.restDurationSec,
+          stepIndex: set === setTotal - 1 ? stepIndex + 1 : stepIndex,
+        });
+      }
     }
   });
 
@@ -78,12 +91,14 @@ export function timelineDurationSec(segments: Segment[]): number {
   return segments.reduce((sum, s) => sum + s.durationSec, 0);
 }
 
-/** Total active stretch seconds of a routine (what XP is based on). */
+/** Total active work seconds of a routine (what XP is based on). */
 export function routineActiveSec(routine: Routine): number {
   return routine.steps.reduce((sum, step) => {
     const exercise = EXERCISE_BY_ID[step.exerciseId];
     if (!exercise) return sum;
-    return sum + step.durationSec * (exercise.side === 'per-side' ? 2 : 1);
+    const sets = Math.max(1, step.sets ?? 1);
+    const sides = exercise.side === 'per-side' ? 2 : 1;
+    return sum + step.durationSec * sides * sets;
   }, 0);
 }
 

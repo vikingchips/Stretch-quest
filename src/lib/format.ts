@@ -15,3 +15,19 @@ export function formatMinutes(totalSec: number): string {
 export function formatAreaLabel(area: string): string {
   return area.replace('-', ' ');
 }
+
+/**
+ * How a step's dose reads on screen: "2 x 5 reps", "2 x 25s per side", "60s".
+ */
+export function formatStepDose(
+  step: { durationSec: number; sets?: number; reps?: number },
+  exercise: { side: 'both' | 'per-side'; mode?: 'timed' | 'reps'; defaultReps?: number },
+): string {
+  const sets = Math.max(1, step.sets ?? 1);
+  const perSide = exercise.side === 'per-side' ? ' per side' : '';
+  const unit =
+    exercise.mode === 'reps'
+      ? `${step.reps ?? exercise.defaultReps ?? 0} reps`
+      : `${step.durationSec}s`;
+  return sets > 1 ? `${sets} × ${unit}${perSide}` : `${unit}${perSide}`;
+}

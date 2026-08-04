@@ -1,23 +1,23 @@
 import { Link } from 'react-router-dom';
 import type { Routine } from '../types';
-import { useSettingsStore } from '../store/settingsStore';
-import { routineTotalSec } from '../session/timeline';
+import { routineActiveSec } from '../session/timeline';
 import { formatMinutes } from '../lib/format';
 import { Icon } from './Icon';
 
 /** Colors are marks only — never text — so they stay quiet and pass contrast. */
 export const CATEGORY_META: Record<Routine['category'], { label: string; color: string }> = {
+  hybrid: { label: 'daily', color: 'var(--color-pine)' },
   climbing: { label: 'climbing', color: 'var(--color-bark)' },
   running: { label: 'running', color: 'var(--color-fjord)' },
-  'full-body': { label: 'full body', color: 'var(--color-pine)' },
+  recovery: { label: 'rest day', color: 'var(--color-clay)' },
   custom: { label: 'my routine', color: 'var(--color-stone)' },
+  // Legacy: only reachable through old session records.
+  'full-body': { label: 'full body', color: 'var(--color-stone)' },
 };
 
 export function RoutineCard({ routine }: { routine: Routine }) {
-  const prepDurationSec = useSettingsStore((s) => s.prepDurationSec);
-  const restDurationSec = useSettingsStore((s) => s.restDurationSec);
   const meta = CATEGORY_META[routine.category];
-  const total = routineTotalSec(routine, { prepDurationSec, restDurationSec });
+  const work = routineActiveSec(routine);
   return (
     <Link
       to={`/routines/${routine.id}`}
@@ -31,7 +31,7 @@ export function RoutineCard({ routine }: { routine: Routine }) {
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-base lowercase">{routine.name}</h3>
         <p className="mt-0.5 text-xs lowercase text-ink-soft">
-          {meta.label} · {routine.steps.length} stretches · {formatMinutes(total)}
+          {meta.label} · {routine.steps.length} exercises · {formatMinutes(work)} work
         </p>
       </div>
       <span className="text-line group-hover:text-ink-soft">

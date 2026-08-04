@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { Modality } from '../types';
 import { useRoutinesStore } from '../store/routinesStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useProgressStore } from '../store/progressStore';
@@ -21,9 +22,19 @@ import { formatClock } from '../lib/format';
 
 const KIND_STYLE: Record<string, { label: string; color: string }> = {
   prep: { label: 'get ready', color: 'var(--color-fjord-deep)' },
-  stretch: { label: 'stretch', color: 'var(--color-pine-deep)' },
+  stretch: { label: 'work', color: 'var(--color-pine-deep)' },
   switch: { label: 'switch sides', color: 'var(--color-fjord-deep)' },
   rest: { label: 'rest', color: 'var(--color-ink-soft)' },
+};
+
+/** The work segment is named after what you are actually doing. */
+const MODALITY_LABEL: Record<Modality, string> = {
+  dynamic: 'move',
+  static: 'hold',
+  loaded: 'load',
+  eccentric: 'lower slowly',
+  activation: 'activate',
+  potentiation: 'prime',
 };
 
 export function SessionPage() {
@@ -107,8 +118,12 @@ export function SessionPage() {
       : undefined;
   const upNextExercise = upNext?.exerciseId ? EXERCISE_BY_ID[upNext.exerciseId] : undefined;
   const style = KIND_STYLE[segment.kind];
+  const phaseLabel =
+    segment.kind === 'stretch' && exercise ? MODALITY_LABEL[exercise.modality] : style.label;
   const paused = state.status === 'paused';
   const progressPct = Math.round(overallProgress(state) * 100);
+  const selfPaced = Boolean(segment.selfPaced);
+  const clock = selfPaced ? state.elapsedMs / 1000 : state.remainingMs / 1000;
 
   return (
     <main className="flex min-h-dvh flex-col px-6 pb-10 pt-6">
@@ -133,8 +148,9 @@ export function SessionPage() {
 
       <div className="flex flex-1 flex-col items-center justify-center text-center">
         <span className="text-xs lowercase tracking-[0.18em]" style={{ color: style.color }}>
-          {style.label}
+          {phaseLabel}
           {segment.sideLabel ? ` · ${segment.sideLabel}` : ''}
+          {segment.setTotal ? ` · set ${segment.setIndex} of ${segment.setTotal}` : ''}
         </span>
 
         {segment.kind === 'stretch' && exercise ? (
@@ -163,9 +179,16 @@ export function SessionPage() {
           </div>
         )}
 
-        <div className="mt-10 text-7xl tabular-nums leading-none">
-          {formatClock(state.remainingMs / 1000)}
-        </div>
+        {segment.reps && (
+          <div className="mt-8 text-sm lowercase text-ink-soft">{segment.reps} reps</div>
+        )}
+
+        <div className="mt-6 text-7xl tabular-nums leading-none">{formatClock(clock)}</div>
+        {selfPaced && (
+          <div className="mt-2 text-xs lowercase text-ink-soft">
+            counting up · take the tempo you need
+          </div>
+        )}
 
         {exercise?.tips && segment.kind === 'stretch' && (
           <p className="measure mt-6 border-t border-line-soft pt-4 text-xs leading-relaxed text-ink-soft">
@@ -185,12 +208,16 @@ export function SessionPage() {
         <button
           onClick={() => {
             initAudio();
-            dispatch({ type: paused ? 'RESUME' : 'PAUSE' });
+            dispatch(selfPaced ? { type: 'ADVANCE' } : { type: paused ? 'RESUME' : 'PAUSE' });
           }}
           className="bg-pine-deep p-6 text-paper hover:brightness-110"
-          aria-label={paused ? 'Resume' : 'Pause'}
+          aria-label={selfPaced ? 'Set done' : paused ? 'Resume' : 'Pause'}
         >
-          <Icon name={paused ? 'play' : 'pause'} size={24} strokeWidth={1.4} />
+          <Icon
+            name={selfPaced ? 'check' : paused ? 'play' : 'pause'}
+            size={24}
+            strokeWidth={1.4}
+          />
         </button>
         <button
           onClick={() => dispatch({ type: 'SKIP' })}

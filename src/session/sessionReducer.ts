@@ -6,6 +6,8 @@ export interface SessionState {
   segments: Segment[];
   index: number;
   remainingMs: number;
+  /** Time spent in the current segment. The display for self-paced work. */
+  elapsedMs: number;
   status: SessionStatus;
   /** Accumulated stretch time (only 'stretch' segments count). */
   activeMs: number;
@@ -19,13 +21,16 @@ export type SessionEvent =
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'SKIP' }
-  | { type: 'BACK' };
+  | { type: 'BACK' }
+  /** Finish a self-paced segment — the rep-work equivalent of the clock running out. */
+  | { type: 'ADVANCE' };
 
 export function initSession(segments: Segment[], stepsTotal: number): SessionState {
   return {
     segments,
     index: 0,
     remainingMs: (segments[0]?.durationSec ?? 0) * 1000,
+    elapsedMs: 0,
     status: segments.length > 0 ? 'running' : 'finished',
     activeMs: 0,
     completedSteps: [],
@@ -51,12 +56,19 @@ function stepFinishedAt(segments: Segment[], index: number, stepIndex: number): 
 
 function enterSegment(state: SessionState, index: number): SessionState {
   if (index >= state.segments.length) {
-    return { ...state, index: state.segments.length, remainingMs: 0, status: 'finished' };
+    return {
+      ...state,
+      index: state.segments.length,
+      remainingMs: 0,
+      elapsedMs: 0,
+      status: 'finished',
+    };
   }
   return {
     ...state,
     index,
     remainingMs: state.segments[index].durationSec * 1000,
+    elapsedMs: 0,
     status: 'running',
   };
 }
@@ -81,14 +93,30 @@ export function sessionReducer(state: SessionState, event: SessionEvent): Sessio
     case 'TICK': {
       if (state.status !== 'running') return state;
       const segment = state.segments[state.index];
+      const elapsedMs = state.elapsedMs + event.deltaMs;
+
+      // Self-paced work never times out — it counts up and waits for ADVANCE.
+      if (segment.selfPaced) {
+        const activeMs =
+          segment.kind === 'stretch' ? state.activeMs + event.deltaMs : state.activeMs;
+        return { ...state, elapsedMs, activeMs };
+      }
+
       const consumed = Math.min(event.deltaMs, state.remainingMs);
       const activeMs =
         segment.kind === 'stretch' ? state.activeMs + consumed : state.activeMs;
       const remainingMs = state.remainingMs - event.deltaMs;
       if (remainingMs > 0) {
-        return { ...state, remainingMs, activeMs };
+        return { ...state, remainingMs, elapsedMs, activeMs };
       }
       return completeCurrentSegment({ ...state, activeMs });
+    }
+
+    case 'ADVANCE': {
+      // Only self-paced segments end on demand; elsewhere SKIP is the escape
+      // hatch, and it deliberately does not count the step as completed.
+      if (!state.segments[state.index]?.selfPaced) return state;
+      return completeCurrentSegment(state);
     }
 
     case 'PAUSE':
@@ -120,11 +148,10 @@ export function sessionReducer(state: SessionState, event: SessionEvent): Sessio
           prev,
         );
       }
-      const elapsedMs = segment.durationSec * 1000 - state.remainingMs;
       const currentStart = firstSegmentOfStep(state.segments, segment.stepIndex);
       // Within the first 2s of a step, BACK jumps to the previous step;
       // afterwards it restarts the current step.
-      const atStepStart = state.index === currentStart && elapsedMs < 2000;
+      const atStepStart = state.index === currentStart && state.elapsedMs < 2000;
       if (atStepStart && segment.stepIndex > 0) {
         const prev = firstSegmentOfStep(state.segments, segment.stepIndex - 1);
         return enterSegment(
@@ -150,7 +177,12 @@ export function overallProgress(state: SessionState): number {
     elapsed += state.segments[i].durationSec * 1000;
   }
   if (state.index < state.segments.length) {
-    elapsed += state.segments[state.index].durationSec * 1000 - state.remainingMs;
+    const segment = state.segments[state.index];
+    // A self-paced segment can run past its estimate; it never reads as more
+    // than its own share of the bar.
+    elapsed += segment.selfPaced
+      ? Math.min(state.elapsedMs, segment.durationSec * 1000)
+      : segment.durationSec * 1000 - state.remainingMs;
   }
   return Math.min(1, elapsed / totalMs);
 }

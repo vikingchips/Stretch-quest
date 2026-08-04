@@ -8,7 +8,7 @@ import { initAudio } from '../session/audio';
 import { BodyMark } from '../components/BodyMark';
 import { Icon } from '../components/Icon';
 import { CATEGORY_META } from '../components/RoutineCard';
-import { formatMinutes } from '../lib/format';
+import { formatMinutes, formatStepDose } from '../lib/format';
 
 export function RoutineDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,14 +63,26 @@ export function RoutineDetailPage() {
       <h1 className="text-2xl lowercase">{routine.name}</h1>
       <p className="measure mt-3 text-sm leading-relaxed text-ink-soft">{routine.description}</p>
 
+      {routine.guidance && (
+        <p className="measure mt-5 text-sm leading-relaxed">
+          <span className="lowercase text-ink-soft">when · </span>
+          {routine.guidance}
+        </p>
+      )}
+      {routine.caution && (
+        <p className="measure mt-3 border border-line-soft bg-surface p-4 text-sm leading-relaxed text-clay">
+          {routine.caution}
+        </p>
+      )}
+
       <dl className="mt-8 flex gap-10 border-y border-line-soft py-4 text-sm lowercase">
         <div>
-          <dt className="text-xs text-ink-soft">duration</dt>
-          <dd className="mt-1">{formatMinutes(total)}</dd>
+          <dt className="text-xs text-ink-soft">work</dt>
+          <dd className="mt-1">{formatMinutes(activeSec)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-ink-soft">stretches</dt>
-          <dd className="mt-1">{routine.steps.length}</dd>
+          <dt className="text-xs text-ink-soft">with rests</dt>
+          <dd className="mt-1">{formatMinutes(total)}</dd>
         </div>
         <div>
           <dt className="text-xs text-ink-soft">earns</dt>
@@ -83,13 +95,18 @@ export function RoutineDetailPage() {
           const exercise = EXERCISE_BY_ID[step.exerciseId];
           if (!exercise) return null;
           return (
-            <li key={i} className="flex items-center gap-5 border-b border-line-soft py-4">
+            <li key={i} className="flex items-start gap-5 border-b border-line-soft py-4">
               <BodyMark areas={exercise.targetAreas} />
               <div className="min-w-0 flex-1">
                 <h3 className="text-base lowercase">{exercise.name}</h3>
                 <p className="mt-0.5 text-xs lowercase text-ink-soft">
-                  {step.durationSec}s{exercise.side === 'per-side' ? ' per side' : ''}
+                  {formatStepDose(step, exercise)} · {exercise.modality}
                 </p>
+                {exercise.purpose && (
+                  <p className="measure mt-1.5 text-xs leading-relaxed text-ink-soft">
+                    {exercise.purpose}
+                  </p>
+                )}
               </div>
               <span className="text-sm tabular-nums text-line">
                 {String(i + 1).padStart(2, '0')}

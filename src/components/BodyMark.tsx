@@ -31,6 +31,7 @@ const AREA_SEGMENTS: Record<BodyArea, Segment[]> = {
   core: ['torso'],
   hips: ['hips'],
   glutes: ['hips'],
+  adductors: ['hips', 'thighs'],
   hamstrings: ['thighs'],
   quads: ['thighs'],
   calves: ['shins'],

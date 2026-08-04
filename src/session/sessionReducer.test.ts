@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { Segment } from './timeline';
-import { initSession, sessionReducer, type SessionState } from './sessionReducer';
+import {
+  initSession,
+  overallProgress,
+  sessionReducer,
+  type SessionState,
+} from './sessionReducer';
 
 const segments: Segment[] = [
   { kind: 'prep', durationSec: 5, stepIndex: 0 },
@@ -105,5 +110,58 @@ describe('sessionReducer', () => {
     }
     expect(s.status).toBe('finished');
     expect(s.activeMs).toBe(70000);
+  });
+});
+
+describe('self-paced segments', () => {
+  const paced = [
+    { kind: 'prep' as const, durationSec: 5, stepIndex: 0 },
+    {
+      kind: 'stretch' as const,
+      durationSec: 40,
+      stepIndex: 0,
+      exerciseId: 'nordic',
+      selfPaced: true,
+      reps: 5,
+    },
+  ];
+
+  it('does not advance when the estimate elapses', () => {
+    let s = initSession(paced, 1);
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 5000 }); // finish prep
+    expect(s.index).toBe(1);
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 60_000 }); // past the 40s estimate
+    expect(s.index).toBe(1);
+    expect(s.status).toBe('running');
+    expect(s.elapsedMs).toBe(60_000);
+  });
+
+  it('counts all self-paced time as active time', () => {
+    let s = initSession(paced, 1);
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 5000 });
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 60_000 });
+    expect(s.activeMs).toBe(60_000);
+  });
+
+  it('completes the step on ADVANCE', () => {
+    let s = initSession(paced, 1);
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 5000 });
+    s = sessionReducer(s, { type: 'ADVANCE' });
+    expect(s.status).toBe('finished');
+    expect(s.completedSteps).toEqual([0]);
+  });
+
+  it('ignores ADVANCE on timed segments', () => {
+    let s = initSession(paced, 1);
+    const before = s.index;
+    s = sessionReducer(s, { type: 'ADVANCE' }); // still in prep
+    expect(s.index).toBe(before);
+  });
+
+  it('never reads as more than its share of the progress bar', () => {
+    let s = initSession(paced, 1);
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 5000 });
+    s = sessionReducer(s, { type: 'TICK', deltaMs: 600_000 });
+    expect(overallProgress(s)).toBe(1);
   });
 });

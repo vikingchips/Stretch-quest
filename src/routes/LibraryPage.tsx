@@ -4,7 +4,7 @@ import type { BodyArea } from '../types';
 import { BUILTIN_ROUTINES } from '../data/routines';
 import { EXERCISES } from '../data/exercises';
 import { useRoutinesStore } from '../store/routinesStore';
-import { RoutineCard, CATEGORY_META } from '../components/RoutineCard';
+import { RoutineCard } from '../components/RoutineCard';
 import { BodyMark } from '../components/BodyMark';
 import { Icon } from '../components/Icon';
 import { formatAreaLabel } from '../lib/format';
@@ -20,6 +20,7 @@ const AREAS: BodyArea[] = [
   'core',
   'hips',
   'glutes',
+  'adductors',
   'hamstrings',
   'quads',
   'calves',
@@ -32,21 +33,30 @@ export function LibraryPage() {
   const [areaFilter, setAreaFilter] = useState<BodyArea | null>(null);
   const customRoutines = useRoutinesStore((s) => s.customRoutines);
 
-  const groups: Array<{ key: string; title: string; routines: typeof BUILTIN_ROUTINES }> = [
+  // Grouped by when you run them, not by body part — the timing split is the
+  // whole point of the protocol.
+  const groups: Array<{
+    key: string;
+    title: string;
+    note?: string;
+    routines: typeof BUILTIN_ROUTINES;
+  }> = [
     {
-      key: 'climbing',
-      title: CATEGORY_META.climbing.label,
-      routines: BUILTIN_ROUTINES.filter((r) => r.category === 'climbing'),
+      key: 'daily',
+      title: 'every day',
+      routines: BUILTIN_ROUTINES.filter((r) => r.category === 'hybrid'),
     },
     {
-      key: 'running',
-      title: CATEGORY_META.running.label,
-      routines: BUILTIN_ROUTINES.filter((r) => r.category === 'running'),
+      key: 'pre-activity',
+      title: 'before you go',
+      note: 'Dynamic only, so nothing is taken off the top of your session.',
+      routines: BUILTIN_ROUTINES.filter((r) => r.timing === 'pre-activity'),
     },
     {
-      key: 'full-body',
-      title: CATEGORY_META['full-body'].label,
-      routines: BUILTIN_ROUTINES.filter((r) => r.category === 'full-body'),
+      key: 'recovery',
+      title: 'away from performance',
+      note: 'Loaded and static work. This is where range is actually built.',
+      routines: BUILTIN_ROUTINES.filter((r) => r.timing === 'away-from-performance'),
     },
     {
       key: 'custom',
@@ -83,8 +93,13 @@ export function LibraryPage() {
             (group) =>
               group.routines.length > 0 && (
                 <section key={group.key} className="mb-10">
-                  <h2 className="mb-1 text-sm lowercase text-ink-soft">{group.title}</h2>
-                  <div className="border-t border-line-soft">
+                  <h2 className="text-sm lowercase text-ink-soft">{group.title}</h2>
+                  {group.note && (
+                    <p className="measure mb-1 mt-1 text-xs leading-relaxed text-ink-soft">
+                      {group.note}
+                    </p>
+                  )}
+                  <div className="mt-1 border-t border-line-soft">
                     {group.routines.map((r) => (
                       <RoutineCard key={r.id} routine={r} />
                     ))}
@@ -94,10 +109,10 @@ export function LibraryPage() {
           )}
           <Link
             to="/builder"
-            className="fixed bottom-24 right-6 z-10 border border-line bg-paper p-3.5 text-ink-soft hover:bg-surface hover:text-ink"
-            aria-label="Create routine"
+            className="flex w-full items-center justify-center gap-2 border border-line py-3.5 text-sm lowercase text-ink-soft hover:bg-surface hover:text-ink"
           >
-            <Icon name="plus" size={20} />
+            <Icon name="plus" size={16} />
+            new routine
           </Link>
         </>
       ) : (
@@ -138,8 +153,7 @@ export function LibraryPage() {
                   <h3 className="text-base lowercase">{exercise.name}</h3>
                   <p className="mt-0.5 text-xs lowercase text-ink-soft">
                     {exercise.targetAreas.map(formatAreaLabel).join(' · ')} ·{' '}
-                    {exercise.defaultDurationSec}s
-                    {exercise.side === 'per-side' ? ' / side' : ''}
+                    {exercise.modality}
                   </p>
                   <p className="measure mt-2 text-sm leading-relaxed text-ink-soft">
                     {exercise.instructions}
