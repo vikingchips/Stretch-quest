@@ -1,64 +1,96 @@
 import { create } from 'zustand';
 import { getSupabase, hasStoredSession, syncConfigured } from './client';
+import { nameToIdentity, nameToSlug, pinToPassword } from './identity';
 
-export type AuthStatus = 'unconfigured' | 'loading' | 'signed-out' | 'code-sent' | 'signed-in';
+export type AuthStatus = 'unconfigured' | 'loading' | 'signed-out' | 'signed-in';
 
 interface AuthState {
   status: AuthStatus;
-  email: string | null;
+  /** What the person typed, kept for display. */
+  displayName: string | null;
   userId: string | null;
   error: string | null;
-  /** Send a six-digit sign-in code. No link, no redirect, no URL fragment. */
-  requestCode: (email: string) => Promise<void>;
-  verifyCode: (code: string) => Promise<void>;
+  signIn: (name: string, pin: string) => Promise<void>;
+  createAccount: (name: string, pin: string) => Promise<void>;
   signOut: () => Promise<void>;
-  cancel: () => void;
+  clearError: () => void;
+}
+
+/**
+ * Supabase speaks in its own terms; these are the two cases that actually
+ * happen here, translated into what the person did wrong.
+ */
+function explain(raw: string): string {
+  const message = raw.toLowerCase();
+  if (message.includes('invalid login credentials')) {
+    return 'No account with that name and code. Check the code, or create an account.';
+  }
+  if (message.includes('already registered') || message.includes('already been registered')) {
+    return 'That name is taken. Pick another, or sign in if it is yours.';
+  }
+  return raw;
 }
 
 function message(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return 'Something went wrong. Try again.';
+  return explain(error instanceof Error ? error.message : 'Something went wrong. Try again.');
 }
 
-export const useAuthStore = create<AuthState>()((set, get) => ({
+export const useAuthStore = create<AuthState>()((set) => ({
   status: syncConfigured ? 'loading' : 'unconfigured',
-  email: null,
+  displayName: null,
   userId: null,
   error: null,
 
-  requestCode: async (email) => {
+  signIn: async (name, pin) => {
     const pending = getSupabase();
     if (!pending) return;
     set({ status: 'loading', error: null });
     try {
       const supabase = await pending;
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: true },
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: nameToIdentity(name),
+        password: pinToPassword(pin),
       });
       if (error) throw error;
-      set({ status: 'code-sent', email });
+      set({
+        status: 'signed-in',
+        userId: data.user?.id ?? null,
+        displayName: (data.user?.user_metadata?.display_name as string) ?? name,
+        error: null,
+      });
     } catch (error) {
       set({ status: 'signed-out', error: message(error) });
     }
   },
 
-  verifyCode: async (code) => {
-    const email = get().email;
+  createAccount: async (name, pin) => {
     const pending = getSupabase();
-    if (!pending || !email) return;
+    if (!pending) return;
     set({ status: 'loading', error: null });
     try {
       const supabase = await pending;
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: code.trim(),
-        type: 'email',
+      const { data, error } = await supabase.auth.signUp({
+        email: nameToIdentity(name),
+        password: pinToPassword(pin),
+        options: { data: { display_name: name.trim(), slug: nameToSlug(name) } },
       });
       if (error) throw error;
-      set({ status: 'signed-in', userId: data.user?.id ?? null, error: null });
+      // With email confirmation off, sign-up already returns a session.
+      if (!data.session) {
+        set({
+          status: 'signed-out',
+          error: 'Account created, but not signed in. Try signing in.',
+        });
+        return;
+      }
+      set({
+        status: 'signed-in',
+        userId: data.user?.id ?? null,
+        displayName: name.trim(),
+        error: null,
+      });
     } catch (error) {
-      set({ status: 'code-sent', error: message(error) });
+      set({ status: 'signed-out', error: message(error) });
     }
   },
 
@@ -67,13 +99,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (!pending) return;
     await (await pending).auth.signOut();
     // Local data stays put — signing out is not a delete.
-    set({ status: 'signed-out', email: null, userId: null, error: null });
+    set({ status: 'signed-out', displayName: null, userId: null, error: null });
   },
 
-  cancel: () => set({ status: 'signed-out', email: null, error: null }),
+  clearError: () => set({ error: null }),
 }));
 
-/** Wire the store to Supabase's own session lifecycle (refresh, expiry). */
 export function initAuth(): void {
   if (!syncConfigured) return;
   // Nobody signed in on this device: stay signed out and never load the SDK.
@@ -82,6 +113,11 @@ export function initAuth(): void {
     return;
   }
   void attachSession();
+}
+
+function nameOf(metadata: Record<string, unknown> | undefined): string | null {
+  const name = metadata?.display_name;
+  return typeof name === 'string' ? name : null;
 }
 
 /** Loads the SDK and follows its session lifecycle (restore, refresh, expiry). */
@@ -93,13 +129,21 @@ export async function attachSession(): Promise<void> {
   const session = data.session;
   useAuthStore.setState(
     session
-      ? { status: 'signed-in', userId: session.user.id, email: session.user.email ?? null }
+      ? {
+          status: 'signed-in',
+          userId: session.user.id,
+          displayName: nameOf(session.user.user_metadata),
+        }
       : { status: 'signed-out' },
   );
   supabase.auth.onAuthStateChange((_event, next) => {
     useAuthStore.setState(
       next
-        ? { status: 'signed-in', userId: next.user.id, email: next.user.email ?? null }
+        ? {
+            status: 'signed-in',
+            userId: next.user.id,
+            displayName: nameOf(next.user.user_metadata),
+          }
         : { status: 'signed-out', userId: null },
     );
   });

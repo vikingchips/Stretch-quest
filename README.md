@@ -18,17 +18,39 @@ for everything else.
 - **PWA** — installable on iOS/Android home screens, fully offline after the
   first visit. Architected so it can later be wrapped with Capacitor for the
   app stores.
-- **Optional accounts** — sign in with an emailed six-digit code to back your
-  history up and pick it up on another device. Off by default; see below.
+- **Optional accounts** — a name and a four-digit code backs your history up
+  and carries it to another device. No email anywhere. Off by default; see
+  below.
 
 ## Sync (optional)
 
 The app is complete without it: data lives in localStorage, works offline, no
-account. An account only adds a backup you can reach from another device.
+account. An account only adds a backup that follows you to another device.
+
+Sign-in is **a name and a four-digit code**. No email is involved anywhere —
+which is the point, because every free email path in 2026 dead-ends without a
+verified domain: Supabase's built-in sender only delivers to members of the
+project's organization, Resend needs a verified domain to reach anyone but
+you, and Brevo refuses free sender domains outright.
+
+**This is not real security.** Four digits against a guessable name is 10,000
+combinations. It is a deliberate trade for stretching history, and the account
+panel says so where people choose a code. Anything more sensitive needs a
+different scheme.
+
+Under the hood it is ordinary Supabase password auth. A name is folded to a
+synthetic address on the RFC 2606 reserved `.invalid` TLD, which can never
+resolve and is never mailed — it is an identifier, not a mailbox. Real
+sessions, token refresh and `auth.uid()`-scoped RLS keep working exactly as
+they would with email. See `src/sync/identity.ts`.
+
+Names fold to a stable key: lowercase, accents stripped, everything else
+collapsed to dashes. "Måns Brandt", "måns brandt" and "Måns-Brandt" are one
+account. Two people who want the same name cannot both have it.
 
 When `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are absent, the Supabase
 SDK is tree-shaken out of the bundle entirely and the account panel says so.
-When present, the SDK loads on demand — as a separate ~53 kB chunk fetched only
+When present, the SDK loads on demand — a separate ~53 kB chunk fetched only
 when you open Settings or already have a session — so visitors who never sign
 in do not pay for it.
 
@@ -38,44 +60,22 @@ in do not pay for it.
    enough).
 2. Run `supabase/schema.sql` in the project's SQL editor. It creates one table
    and its row-level security policies.
-3. Authentication → **Sign In / Providers** → expand **Email** and make sure it
-   is enabled.
-4. Authentication → **Emails** → the **Magic Link** template → replace
-   `{{ .ConfirmationURL }}` with `{{ .Token }}`. This step is not optional.
-   Magic links and one-time codes share an implementation in Supabase, and the
-   template is what decides which one gets sent: leave the URL in and users
-   receive a link the app has no way to consume, because it asks for a code.
-   Something like:
-
-   ```html
-   <h2>Your StretchQuest code</h2>
-   <p>{{ .Token }}</p>
-   <p>It expires in an hour.</p>
-   ```
-
-5. Add the project URL and the **anon** key as repository secrets named
+3. Authentication → **Sign In / Providers** → expand **Email**: leave the
+   provider enabled and turn **Confirm email off**. Without that, sign-up waits
+   for a confirmation email that can never arrive at a `.invalid` address.
+4. Add the project URL and the **anon** key as repository secrets named
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Settings → Secrets and
    variables → Actions). The deploy workflow picks them up.
 
-No redirect URLs are needed anywhere — nothing in this flow uses one, and
-custom SMTP is not required either. Leave the SMTP toggle off.
-
-**Who can actually receive a code.** Supabase's built-in email service only
-delivers auth emails to addresses that are members of the project's
-organization. For a personal deployment that is fine — sign in with the same
-address as your Supabase account. Any other address silently receives nothing:
-the call succeeds, no error surfaces, the email is simply never sent. If anyone
-else needs to sign in, that is the point where custom SMTP becomes necessary,
-not before.
-
-The built-in service also allows only two auth emails per hour (30 with custom
-SMTP), and codes can be requested once every 60 seconds and expire after an
-hour. Rate limits are adjustable under Authentication → Rate Limits; hitting
-one surfaces Supabase's own error message in the account panel.
+No SMTP, no email templates, no redirect URLs, no domain.
 
 The anon key is designed to be public. Row-level security is what keeps one
 account's rows away from another's — every policy in the schema is scoped to
 `auth.uid()`.
+
+Sign-ups are open: anyone can create an account. To close that, drop the
+`createAccount` path in `src/sync/authStore.ts` and add users from the Supabase
+dashboard instead.
 
 **How sync behaves.** Signing in pulls the remote row, merges it into local
 state, and pushes the merged result back; later changes push on a two-second
@@ -83,10 +83,6 @@ debounce. The merge (`src/sync/merge.ts`, unit-tested) is deliberately
 additive — sessions union by id, badge unlocks keep the earliest timestamp,
 date sets union, scalars take the larger value. Signing in on a second device
 can therefore never delete history. Sign-out leaves local data untouched.
-
-Because sign-in uses a code rather than a magic link, no token ever lands in
-the URL — which matters here, since the app is hash-routed and a fragment
-token would collide with the route.
 
 ## The protocol
 

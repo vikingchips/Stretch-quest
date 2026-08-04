@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { syncConfigured } from '../sync/client';
 import { attachSession, useAuthStore } from '../sync/authStore';
+import { isValidName, isValidPin, PIN_LENGTH } from '../sync/identity';
 import { onSyncChange, syncNow, syncState } from '../sync/cloudSync';
 import { Icon } from './Icon';
 
@@ -12,19 +13,24 @@ const SYNC_LABEL = {
 } as const;
 
 export function AccountSection() {
-  const { status, email, error, requestCode, verifyCode, signOut, cancel } = useAuthStore();
+  const { status, displayName, error, signIn, createAccount, signOut, clearError } =
+    useAuthStore();
   const sync = useSyncExternalStore(onSyncChange, syncState, syncState);
-  const [emailInput, setEmailInput] = useState('');
-  const [code, setCode] = useState('');
-
-  useEffect(() => {
-    if (status === 'signed-out') setCode('');
-  }, [status]);
+  const [mode, setMode] = useState<'sign-in' | 'create'>('sign-in');
+  const [name, setName] = useState('');
+  const [pin, setPin] = useState('');
 
   // Opening settings is a good moment to find out whether a session exists.
   useEffect(() => {
     if (syncConfigured) void attachSession();
   }, []);
+
+  useEffect(() => {
+    if (status === 'signed-in') {
+      setName('');
+      setPin('');
+    }
+  }, [status]);
 
   if (!syncConfigured) {
     return (
@@ -44,7 +50,7 @@ export function AccountSection() {
       <section className="mb-10">
         <h2 className="mb-3 text-sm lowercase text-ink-soft">account</h2>
         <div className="border-y border-line-soft py-4">
-          <p className="text-sm">{email}</p>
+          <p className="text-sm lowercase">{displayName ?? 'signed in'}</p>
           <p className="mt-1 text-xs lowercase text-ink-soft">
             {sync.state === 'error' ? (sync.error ?? SYNC_LABEL.error) : SYNC_LABEL[sync.state]}
           </p>
@@ -71,66 +77,75 @@ export function AccountSection() {
     );
   }
 
-  if (status === 'code-sent') {
-    return (
-      <section className="mb-10">
-        <h2 className="mb-3 text-sm lowercase text-ink-soft">account</h2>
-        <p className="measure text-sm leading-relaxed text-ink-soft">
-          We sent a six-digit code to {email}.
-        </p>
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          placeholder="000000"
-          maxLength={8}
-          className="mt-5 w-full border-b border-line bg-transparent pb-3 text-2xl tabular-nums tracking-[0.3em] placeholder:text-ink-soft/40 focus:border-pine focus:outline-none"
-        />
-        {error && <p className="mt-3 text-xs text-clay">{error}</p>}
-        <div className="mt-5 flex gap-3">
-          <button
-            onClick={() => void verifyCode(code)}
-            disabled={code.trim().length < 6}
-            className="flex-1 bg-pine-deep py-3 text-sm lowercase tracking-wide text-paper hover:brightness-110 disabled:opacity-30"
-          >
-            sign in
-          </button>
-          <button
-            onClick={cancel}
-            className="flex-1 border border-line py-3 text-sm lowercase text-ink-soft hover:bg-surface hover:text-ink"
-          >
-            cancel
-          </button>
-        </div>
-      </section>
-    );
+  const ready = isValidName(name) && isValidPin(pin);
+  const busy = status === 'loading';
+
+  function submit() {
+    if (!ready || busy) return;
+    void (mode === 'create' ? createAccount(name, pin) : signIn(name, pin));
+  }
+
+  function switchMode(next: 'sign-in' | 'create') {
+    setMode(next);
+    clearError();
   }
 
   return (
     <section className="mb-10">
       <h2 className="mb-3 text-sm lowercase text-ink-soft">account</h2>
       <p className="measure text-sm leading-relaxed text-ink-soft">
-        Optional. Sign in to back your history up and pick it up on another device. No password
-        — you get a six-digit code by email.
+        Optional. A name and a {PIN_LENGTH}-digit code, so your history is backed up and follows
+        you to another device.
       </p>
+
+      <div className="mt-5 flex border-b border-line">
+        {(['sign-in', 'create'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => switchMode(m)}
+            className={`-mb-px border-b pb-3 pr-8 text-sm lowercase ${
+              mode === m ? 'border-pine text-ink' : 'border-transparent text-ink-soft hover:text-ink'
+            }`}
+          >
+            {m === 'sign-in' ? 'sign in' : 'create account'}
+          </button>
+        ))}
+      </div>
+
       <input
-        value={emailInput}
-        onChange={(e) => setEmailInput(e.target.value)}
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        placeholder="you@example.com"
-        className="mt-5 w-full border-b border-line bg-transparent pb-3 placeholder:text-ink-soft/60 focus:border-pine focus:outline-none"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        autoComplete="username"
+        placeholder="your name"
+        maxLength={40}
+        className="mt-6 w-full border-b border-line bg-transparent pb-3 lowercase placeholder:text-ink-soft/60 focus:border-pine focus:outline-none"
       />
-      {error && <p className="mt-3 text-xs text-clay">{error}</p>}
+      <input
+        value={pin}
+        onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, PIN_LENGTH))}
+        onKeyDown={(e) => e.key === 'Enter' && submit()}
+        inputMode="numeric"
+        autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
+        placeholder="0000"
+        className="mt-6 w-full border-b border-line bg-transparent pb-3 text-2xl tabular-nums tracking-[0.4em] placeholder:text-ink-soft/40 focus:border-pine focus:outline-none"
+      />
+
+      {error && <p className="measure mt-4 text-xs leading-relaxed text-clay">{error}</p>}
+
       <button
-        onClick={() => void requestCode(emailInput.trim())}
-        disabled={!emailInput.includes('@') || status === 'loading'}
-        className="mt-5 w-full bg-pine-deep py-3 text-sm lowercase tracking-wide text-paper hover:brightness-110 disabled:opacity-30"
+        onClick={submit}
+        disabled={!ready || busy}
+        className="mt-6 w-full bg-pine-deep py-3 text-sm lowercase tracking-wide text-paper hover:brightness-110 disabled:opacity-30"
       >
-        {status === 'loading' ? 'sending…' : 'email me a code'}
+        {busy ? 'one moment…' : mode === 'create' ? 'create account' : 'sign in'}
       </button>
+
+      {mode === 'create' && (
+        <p className="measure mt-3 text-xs leading-relaxed text-ink-soft">
+          Four digits is not real security — anyone who knows your name could guess their way in.
+          Fine for stretching history; don't reuse a code that protects anything else.
+        </p>
+      )}
     </section>
   );
 }
