@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-surface: #0f172a;
+  --color-card: #1e293b;
+  --color-card-hover: #273449;
+  --color-line: #334155;
+  --color-brand: #22c55e;
+  --color-brand-dark: #16a34a;
+  --color-flame: #f97316;
+  --color-frost: #38bdf8;
+  --color-gold: #facc15;
+  --color-ink: #f1f5f9;
+  --color-ink-dim: #94a3b8;
+  --font-display: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html {
+  background-color: var(--color-surface);
+}
+
+body {
+  font-family: var(--font-display);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes flame-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(2deg);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-flame {
+  animation: flame-pulse 1.6s ease-in-out infinite;
+  transform-origin: 50% 85%;
+}
+
+.animate-float-up {
+  animation: float-up 0.4s ease-out both;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
