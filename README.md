@@ -38,12 +38,30 @@ in do not pay for it.
    enough).
 2. Run `supabase/schema.sql` in the project's SQL editor. It creates one table
    and its row-level security policies.
-3. In Authentication → Providers, make sure Email is enabled. The app uses
-   one-time codes, so "Confirm email" can stay on and no redirect URLs are
-   needed.
-4. Add the project URL and the **anon** key as repository secrets named
+3. Authentication → **Sign In / Providers** → expand **Email** and make sure it
+   is enabled.
+4. Authentication → **Emails** → the **Magic Link** template → replace
+   `{{ .ConfirmationURL }}` with `{{ .Token }}`. This step is not optional.
+   Magic links and one-time codes share an implementation in Supabase, and the
+   template is what decides which one gets sent: leave the URL in and users
+   receive a link the app has no way to consume, because it asks for a code.
+   Something like:
+
+   ```html
+   <h2>Your StretchQuest code</h2>
+   <p>{{ .Token }}</p>
+   <p>It expires in an hour.</p>
+   ```
+
+5. Add the project URL and the **anon** key as repository secrets named
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Settings → Secrets and
    variables → Actions). The deploy workflow picks them up.
+
+No redirect URLs are needed anywhere — nothing in this flow uses one.
+
+Codes can be requested once every 60 seconds and expire after an hour, both
+adjustable under Authentication → Rate Limits. Hitting either limit surfaces
+Supabase's own error message in the account panel.
 
 The anon key is designed to be public. Row-level security is what keeps one
 account's rows away from another's — every policy in the schema is scoped to
