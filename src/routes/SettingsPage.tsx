@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSettingsStore } from '../store/settingsStore';
 import { useProgressStore } from '../store/progressStore';
 import { Icon } from '../components/Icon';
+import { AccountSection } from '../components/AccountSection';
 
 const REST_OPTIONS = [5, 10, 15, 20];
 const PREP_OPTIONS = [3, 5, 10];
@@ -27,6 +28,8 @@ export function SettingsPage() {
         back
       </button>
       <h1 className="mb-12 text-2xl lowercase tracking-wide">settings</h1>
+
+      <AccountSection />
 
       <section className="mb-10">
         <h2 className="mb-3 text-sm lowercase text-ink-soft">rest between stretches</h2>

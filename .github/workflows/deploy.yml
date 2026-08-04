@@ -27,6 +27,11 @@ jobs:
         env:
           # Serves from https://<user>.github.io/<repo>/ whatever the repo is named.
           BASE_PATH: /${{ github.event.repository.name }}/
+          # Optional. Without them the app builds local-only and the Supabase
+          # SDK is dropped from the bundle entirely. Set both under
+          # Settings -> Secrets and variables -> Actions to enable accounts.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       # Publishes to the gh-pages branch. Enable once under
       # Settings -> Pages -> Source: "Deploy from a branch" -> gh-pages.
       - uses: peaceiris/actions-gh-pages@v4
