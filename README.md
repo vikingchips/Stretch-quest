@@ -57,11 +57,21 @@ in do not pay for it.
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (Settings → Secrets and
    variables → Actions). The deploy workflow picks them up.
 
-No redirect URLs are needed anywhere — nothing in this flow uses one.
+No redirect URLs are needed anywhere — nothing in this flow uses one, and
+custom SMTP is not required either. Leave the SMTP toggle off.
 
-Codes can be requested once every 60 seconds and expire after an hour, both
-adjustable under Authentication → Rate Limits. Hitting either limit surfaces
-Supabase's own error message in the account panel.
+**Who can actually receive a code.** Supabase's built-in email service only
+delivers auth emails to addresses that are members of the project's
+organization. For a personal deployment that is fine — sign in with the same
+address as your Supabase account. Any other address silently receives nothing:
+the call succeeds, no error surfaces, the email is simply never sent. If anyone
+else needs to sign in, that is the point where custom SMTP becomes necessary,
+not before.
+
+The built-in service also allows only two auth emails per hour (30 with custom
+SMTP), and codes can be requested once every 60 seconds and expire after an
+hour. Rate limits are adjustable under Authentication → Rate Limits; hitting
+one surfaces Supabase's own error message in the account panel.
 
 The anon key is designed to be public. Row-level security is what keeps one
 account's rows away from another's — every policy in the schema is scoped to
