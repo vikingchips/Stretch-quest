@@ -1,16 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useProgressStore } from '../store/progressStore';
-import { useSettingsStore } from '../store/settingsStore';
 import { useRoutinesStore } from '../store/routinesStore';
 import { BUILTIN_ROUTINES, BUILTIN_ROUTINE_BY_ID } from '../data/routines';
-import { goalProgress } from '../game/dailyGoal';
+import { goalMetOnDay, weekMarks } from '../game/dailyGoal';
 import { todayKey } from '../game/dates';
 import { StreakStat } from '../components/StreakStat';
 import { XpLevelBar } from '../components/XpLevelBar';
-import { DailyGoalRing } from '../components/DailyGoalRing';
+import { WeekStrip } from '../components/WeekStrip';
 import { RoutineCard } from '../components/RoutineCard';
 import { Icon } from '../components/Icon';
-import { formatMinutes } from '../lib/format';
 
 export function HomePage() {
   const progress = useProgressStore((s) => s.progress);
@@ -18,10 +16,11 @@ export function HomePage() {
   const freezeToast = useProgressStore((s) => s.freezeToast);
   const streakLostToast = useProgressStore((s) => s.streakLostToast);
   const dismissToasts = useProgressStore((s) => s.dismissToasts);
-  const dailyGoalMinutes = useSettingsStore((s) => s.dailyGoalMinutes);
   const customRoutines = useRoutinesStore((s) => s.customRoutines);
 
-  const goal = goalProgress(sessions, todayKey(), dailyGoalMinutes);
+  const today = todayKey();
+  const doneToday = goalMetOnDay(sessions, today);
+  const marks = weekMarks(sessions, progress.frozenDateKeys, today);
 
   const lastSession = sessions[sessions.length - 1];
   const lastRoutine = lastSession
@@ -61,18 +60,20 @@ export function HomePage() {
         </button>
       )}
 
-      <section className="mb-12 flex items-center justify-between">
-        <StreakStat streak={progress.streak} size="lg" />
-        <div className="flex flex-col items-center gap-3">
-          <DailyGoalRing
-            fraction={goal.fraction}
-            met={goal.met}
-            label={formatMinutes(goal.activeSec)}
-            sublabel={`of ${dailyGoalMinutes} min`}
-          />
-          <span className="text-[11px] lowercase text-ink-soft">
-            {progress.streakFreezes} freeze{progress.streakFreezes === 1 ? '' : 's'} banked
-          </span>
+      <section className="mb-12">
+        <div className="flex items-end justify-between">
+          <StreakStat streak={progress.streak} size="lg" />
+          <div className="text-right">
+            <p className="text-sm lowercase">
+              {doneToday ? 'today is done' : 'nothing yet today'}
+            </p>
+            <p className="mt-1 text-[11px] lowercase text-ink-soft">
+              {progress.streakFreezes} freeze{progress.streakFreezes === 1 ? '' : 's'} banked
+            </p>
+          </div>
+        </div>
+        <div className="mt-8">
+          <WeekStrip marks={marks} />
         </div>
       </section>
 

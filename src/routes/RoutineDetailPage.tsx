@@ -37,7 +37,7 @@ export function RoutineDetailPage() {
     activeSec,
     stepsCompleted: routine.steps.length,
     stepsTotal: routine.steps.length,
-    firstTimeDailyGoalMetToday: false,
+    firstSessionOfDay: false,
     streakBefore: 0,
     streakAfter: 0,
   }).total;

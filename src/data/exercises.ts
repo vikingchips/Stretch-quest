@@ -568,6 +568,29 @@ export const EXERCISES: Exercise[] = [
     side: 'both',
     purpose: 'Adductor and hamstring length for wide stances near the wall.',
   },
+  {
+    id: 'eccentric-heel-drop',
+    name: 'Eccentric Heel Drop',
+    instructions:
+      'Stand with the balls of your feet on a step. Rise on both legs, shift your weight to one, then lower that heel below the step as slowly as you can. Step back up with both.',
+    targetAreas: ['calves', 'ankles'],
+    modality: 'eccentric',
+    defaultDurationSec: 45,
+    side: 'per-side',
+    purpose: 'The only work here that lengthens calf fascicles rather than borrowing range for an hour.',
+    tips: 'Do the lowering on one leg and the lift on two. Add a backpack once bodyweight stops being hard.',
+  },
+  {
+    id: 'loaded-dorsiflexion-hold',
+    name: 'Loaded Dorsiflexion Hold',
+    instructions:
+      'In a half-kneeling position, drive the front knee as far past the toes as you can with the heel down, and hold there. Keep breathing rather than bracing.',
+    targetAreas: ['ankles', 'calves'],
+    modality: 'static',
+    defaultDurationSec: 45,
+    side: 'per-side',
+    purpose: 'Ankle dorsiflexion held long enough to change it — the one flexibility variable worth maintaining for running.',
+  },
 ];
 
 export const EXERCISE_BY_ID: Record<string, Exercise> = Object.fromEntries(

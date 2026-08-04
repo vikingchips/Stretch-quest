@@ -15,7 +15,8 @@ export interface XpInput {
   stepsCompleted: number;
   stepsTotal: number;
   /** True when this session pushed today's total over the daily goal for the first time. */
-  firstTimeDailyGoalMetToday: boolean;
+  /** True when this is the first session of the day. */
+  firstSessionOfDay: boolean;
   streakBefore: number;
   streakAfter: number;
 }
@@ -32,7 +33,7 @@ export function computeXp(input: XpInput): XpBreakdown {
   const activeTime = Math.floor(input.activeSec / 30);
   const noSkipBonus =
     input.stepsTotal > 0 && input.stepsCompleted === input.stepsTotal ? 10 : 0;
-  const goalBonus = input.firstTimeDailyGoalMetToday ? 15 : 0;
+  const goalBonus = input.firstSessionOfDay ? 15 : 0;
   // Milestones pay only on the session that raises the streak to that exact value.
   const streakMilestoneBonus =
     input.streakAfter > input.streakBefore &&

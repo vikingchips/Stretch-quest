@@ -133,10 +133,7 @@ export interface UserProgress {
   goalMetDateKeys: string[];
 }
 
-export type DailyGoalMinutes = 5 | 10 | 15 | 20;
-
 export interface Settings {
-  dailyGoalMinutes: DailyGoalMinutes;
   restDurationSec: number;
   prepDurationSec: number;
   soundEnabled: boolean;

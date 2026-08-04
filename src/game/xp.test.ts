@@ -5,7 +5,7 @@ const base = {
   activeSec: 600,
   stepsCompleted: 5,
   stepsTotal: 5,
-  firstTimeDailyGoalMetToday: false,
+  firstSessionOfDay: false,
   streakBefore: 3,
   streakAfter: 4,
 };
@@ -26,7 +26,7 @@ describe('computeXp', () => {
   });
 
   it('adds the goal bonus the first time the daily goal is met', () => {
-    const r = computeXp({ ...base, firstTimeDailyGoalMetToday: true });
+    const r = computeXp({ ...base, firstSessionOfDay: true });
     expect(r.goalBonus).toBe(15);
     expect(r.total).toBe(55);
   });
@@ -53,7 +53,7 @@ describe('computeXp', () => {
       activeSec: 3600,
       stepsCompleted: 10,
       stepsTotal: 10,
-      firstTimeDailyGoalMetToday: true,
+      firstSessionOfDay: true,
       streakBefore: 99,
       streakAfter: 100,
     });

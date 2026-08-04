@@ -1,5 +1,5 @@
 import type { SessionRecord, UserProgress } from '../types';
-import { addDays } from './dates';
+import { addDays, dateFromKey } from './dates';
 
 export interface AchievementContext {
   progress: UserProgress;
@@ -27,12 +27,18 @@ function startHour(record: SessionRecord): number {
   return new Date(record.startedAt).getHours();
 }
 
-function goalMetConsecutive(ctx: AchievementContext, days: number): boolean {
+/**
+ * Every day of one Monday-to-Sunday week. A rolling seven-day streak is
+ * already 'week-streak'; this one asks for a clean calendar week, which is a
+ * different (and harder) thing to land.
+ */
+function fullCalendarWeek(ctx: AchievementContext): boolean {
   const met = new Set(ctx.progress.goalMetDateKeys);
   const latest = ctx.newSession?.dateKey;
   if (!latest || !met.has(latest)) return false;
-  for (let i = 1; i < days; i++) {
-    if (!met.has(addDays(latest, -i))) return false;
+  const monday = addDays(latest, -((dateFromKey(latest).getDay() + 6) % 7));
+  for (let i = 0; i < 7; i++) {
+    if (!met.has(addDays(monday, i))) return false;
   }
   return true;
 }
@@ -53,8 +59,8 @@ const CHECKS: Record<string, Check> = {
   'all-rounder': (ctx) =>
     categoryCount(ctx, 'climbing') >= 1 &&
     categoryCount(ctx, 'running') >= 1 &&
-    categoryCount(ctx, 'full-body') >= 1,
-  'perfect-week': (ctx) => goalMetConsecutive(ctx, 7),
+    (categoryCount(ctx, 'hybrid') >= 1 || categoryCount(ctx, 'full-body') >= 1),
+  'perfect-week': (ctx) => fullCalendarWeek(ctx),
 };
 
 /** Returns ids of achievements newly unlocked in this context. */

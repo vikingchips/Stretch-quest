@@ -11,10 +11,9 @@ import { addDays } from '../game/dates';
 import { computeXp, sessionQualifies } from '../game/xp';
 import { levelForXp } from '../game/levels';
 import { countActiveDay, evaluateStreak, STARTING_FREEZES } from '../game/streak';
-import { activeSecOnDay } from '../game/dailyGoal';
+import { sessionsOnDay } from '../game/dailyGoal';
 import { checkAchievements } from '../game/achievementEngine';
 import { localStorageAdapter, SCHEMA_VERSION, STORAGE_KEYS } from './storage';
-import { useSettingsStore } from './settingsStore';
 import { useRoutinesStore } from './routinesStore';
 
 const MAX_SESSIONS = 1000;
@@ -100,7 +99,6 @@ export const useProgressStore = create<ProgressState>()(
         const now = new Date();
         const today = todayKey();
         const state = get();
-        const settings = useSettingsStore.getState();
         const hasCustomRoutine = useRoutinesStore.getState().customRoutines.length > 0;
 
         const progress = state.progress;
@@ -119,11 +117,9 @@ export const useProgressStore = create<ProgressState>()(
           ? countActiveDay(evaluated, lastActiveDateKey, today)
           : { streak: evaluated.streak, streakFreezes: evaluated.streakFreezes, extended: false };
 
-        // 3. Daily goal: was it met before, is it met now?
-        const goalSec = settings.dailyGoalMinutes * 60;
-        const activeBefore = activeSecOnDay(state.sessions, today);
-        const metBefore = activeBefore >= goalSec;
-        const metNow = activeBefore + input.activeSec >= goalSec;
+        // 3. Daily goal: one session a day. Met the moment this one lands.
+        const metBefore = sessionsOnDay(state.sessions, today) > 0;
+        const metNow = qualifies || metBefore;
         const firstTimeGoalMet = !metBefore && metNow;
 
         // 4. XP.
@@ -131,7 +127,7 @@ export const useProgressStore = create<ProgressState>()(
           activeSec: input.activeSec,
           stepsCompleted: input.stepsCompleted,
           stepsTotal: input.stepsTotal,
-          firstTimeDailyGoalMetToday: firstTimeGoalMet,
+          firstSessionOfDay: firstTimeGoalMet,
           streakBefore,
           streakAfter: counted.streak,
         });

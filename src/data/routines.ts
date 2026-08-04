@@ -126,7 +126,7 @@ export const BUILTIN_ROUTINES: Routine[] = [
     id: 'deep-dive',
     name: 'Deep Dive',
     description:
-      'Where range actually gets built. Loaded eccentrics for the tissues that tear, then long holds for the positions that block you.',
+      'Where range actually gets built. Loaded eccentrics for the tissues that tear, long holds for the positions that block you, and the ankle work that dynamic drills never do.',
     category: 'recovery',
     timing: 'away-from-performance',
     guidance:
@@ -141,6 +141,8 @@ export const BUILTIN_ROUTINES: Routine[] = [
       { exerciseId: 'couch-stretch', durationSec: 60 },
       { exerciseId: 'seated-ninety-ninety-lift', durationSec: 45 },
       { exerciseId: 'pancake-fold', durationSec: 90 },
+      { exerciseId: 'eccentric-heel-drop', durationSec: 60 },
+      { exerciseId: 'loaded-dorsiflexion-hold', durationSec: 45 },
     ],
   },
 ];

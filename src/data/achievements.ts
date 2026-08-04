@@ -81,13 +81,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'all-rounder',
     name: 'All-Rounder',
-    description: 'Do climbing, running and full-body sessions',
+    description: 'Do a climbing, a running and a daily session',
     icon: 'venn',
   },
   {
     id: 'perfect-week',
     name: 'Perfect Week',
-    description: 'Meet your daily goal 7 days in a row',
+    description: 'A session every day, Monday to Sunday',
     icon: 'diamond',
   },
 ];

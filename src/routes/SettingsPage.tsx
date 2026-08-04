@@ -1,10 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import type { DailyGoalMinutes } from '../types';
 import { useSettingsStore } from '../store/settingsStore';
 import { useProgressStore } from '../store/progressStore';
 import { Icon } from '../components/Icon';
 
-const GOALS: DailyGoalMinutes[] = [5, 10, 15, 20];
 const REST_OPTIONS = [5, 10, 15, 20];
 const PREP_OPTIONS = [3, 5, 10];
 
@@ -29,21 +27,6 @@ export function SettingsPage() {
         back
       </button>
       <h1 className="mb-12 text-2xl lowercase tracking-wide">settings</h1>
-
-      <section className="mb-10">
-        <h2 className="mb-3 text-sm lowercase text-ink-soft">daily goal</h2>
-        <div className="flex gap-3">
-          {GOALS.map((g) => (
-            <button
-              key={g}
-              onClick={() => settings.setDailyGoal(g)}
-              className={optionClass(settings.dailyGoalMinutes === g)}
-            >
-              {g} min
-            </button>
-          ))}
-        </div>
-      </section>
 
       <section className="mb-10">
         <h2 className="mb-3 text-sm lowercase text-ink-soft">rest between stretches</h2>
