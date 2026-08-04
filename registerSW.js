@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/Stretch-quest/sw.js', { scope: '/Stretch-quest/' })})}
