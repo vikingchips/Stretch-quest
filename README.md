@@ -24,7 +24,7 @@ for everything else.
 - **Friends** — share a link, follow each other, and see who is actually
   keeping their routine this week.
 - **First-run tour** — four pages explaining the timing split, shown once,
-before the sign-in gate.
+  before the sign-in gate.
 
 ## Sync and accounts
 
