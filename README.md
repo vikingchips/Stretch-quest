@@ -54,11 +54,17 @@ synthetic address that is never sent to — an identifier, not a mailbox. Real
 sessions, token refresh and `auth.uid()`-scoped RLS keep working exactly as
 they would with email. See `src/sync/identity.ts`.
 
-The address uses a real TLD (`stretchquest.app` by default). The semantically
-correct choice would be RFC 2606's reserved `.invalid`, but Supabase validates
-the top-level domain against real ones and rejects it outright. Nothing is ever
-delivered there: the app has no mailer, and step 3 below turns Supabase's off.
-`VITE_IDENTITY_DOMAIN` overrides it if a project validates more strictly still.
+**The domain is not invented.** It is the host of the Supabase project itself,
+derived from `VITE_SUPABASE_URL` — so `mans@abcdef.supabase.co`. That is not
+cosmetic: Supabase rejects any address whose domain does not resolve, and both
+obvious choices fail that test. RFC 2606's reserved `.invalid`, the
+semantically correct answer for an address that must never exist, is NXDOMAIN;
+so is any made-up name like `stretchquest.app`. The project host resolves by
+definition, since the app is already talking to it, and needs no configuration.
+
+Nothing is ever delivered there: the app has no mailer, and step 3 below turns
+Supabase's confirmation mail off. `VITE_IDENTITY_DOMAIN` overrides the default
+if you ever need it to.
 
 Names fold to a stable key: lowercase, accents stripped, everything else
 collapsed to dashes. "Måns Brandt", "måns brandt" and "Måns-Brandt" are one

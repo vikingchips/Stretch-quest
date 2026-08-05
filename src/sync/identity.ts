@@ -8,15 +8,29 @@
  */
 
 /**
- * Supabase validates the top-level domain against real TLDs, so the reserved
- * `.invalid` from RFC 2606 — the semantically correct choice — is rejected
- * outright with "Email address ... is invalid". A valid TLD it is.
+ * Supabase rejects addresses whose domain does not resolve — "Email address
+ * ... is invalid". Both obvious choices fail that test: RFC 2606's reserved
+ * `.invalid` and any made-up name like `stretchquest.app` are NXDOMAIN.
  *
- * Nothing is ever sent here: the app has no mailer, and setup requires
- * "Confirm email" to be off, so Supabase does not send anything either.
- * Overridable in case a project's validation is stricter still.
+ * So the domain is not invented at all. It is the host of the Supabase
+ * project itself, which resolves by definition — the app is already talking
+ * to it — and needs no configuration. Nothing is ever delivered there: the
+ * app has no mailer, and setup turns Supabase's confirmation mail off.
  */
-const IDENTITY_DOMAIN = import.meta.env.VITE_IDENTITY_DOMAIN ?? 'stretchquest.app';
+export function identityDomainFor(supabaseUrl?: string, override?: string): string {
+  if (override) return override;
+  try {
+    return new URL(supabaseUrl ?? '').host;
+  } catch {
+    // Only reached in a build with no credentials, where nothing signs in.
+    return 'stretchquest.local';
+  }
+}
+
+const IDENTITY_DOMAIN = identityDomainFor(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_IDENTITY_DOMAIN,
+);
 
 /** Supabase requires at least six characters; four digits alone are short. */
 const PIN_PREFIX = 'sq-pin-';

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  identityDomainFor,
   isValidName,
   isValidPin,
   nameToIdentity,
@@ -62,15 +63,34 @@ describe('isValidPin', () => {
 
 describe('credentials', () => {
   it('builds an address from the folded name', () => {
-    expect(nameToIdentity('Måns Brandt')).toBe('mans-brandt@stretchquest.app');
-  });
-
-  it('uses a real top-level domain, since Supabase validates it', () => {
-    expect(nameToIdentity('a b')).not.toMatch(/\.(invalid|local|test|example)$/);
+    expect(nameToIdentity('Måns Brandt')).toMatch(/^mans-brandt@/);
   });
 
   it('pads the pin past the six-character minimum', () => {
     expect(pinToPassword('1234').length).toBeGreaterThanOrEqual(6);
     expect(pinToPassword(' 1234 ')).toBe(pinToPassword('1234'));
+  });
+});
+
+describe('identityDomainFor', () => {
+  const PROJECT = 'https://brdsqdthtveorsqskyay.supabase.co';
+
+  it('uses the Supabase project host, which resolves by definition', () => {
+    // Supabase rejects addresses on domains that do not resolve, which is
+    // what sank both `.invalid` and an invented `stretchquest.app`.
+    expect(identityDomainFor(PROJECT)).toBe('brdsqdthtveorsqskyay.supabase.co');
+  });
+
+  it('ignores path and port noise in the url', () => {
+    expect(identityDomainFor('https://abc.supabase.co/rest/v1')).toBe('abc.supabase.co');
+  });
+
+  it('lets an explicit override win', () => {
+    expect(identityDomainFor(PROJECT, 'example.org')).toBe('example.org');
+  });
+
+  it('falls back without a url, where nothing can sign in anyway', () => {
+    expect(identityDomainFor(undefined)).toBe('stretchquest.local');
+    expect(identityDomainFor('not a url')).toBe('stretchquest.local');
   });
 });

@@ -28,10 +28,11 @@ function explain(raw: string): string {
   if (message.includes('already registered') || message.includes('already been registered')) {
     return 'That name is taken. Pick another, or sign in if it is yours.';
   }
-  // Sign-in folds the name into an address behind the scenes, so Supabase
-  // complaining about email is meaningless to whoever is reading it.
+  // Never blame the name for this: the address is built from the Supabase
+  // project host, so a rejection here is a setup problem, not something the
+  // person typing can fix by choosing differently.
   if (message.includes('email') && message.includes('invalid')) {
-    return 'That name could not be used. Try a simpler one — letters and spaces.';
+    return `Sign-in is misconfigured: the server rejected the address this app builds internally. Not your name. Raw error — ${raw}`;
   }
   return raw;
 }
