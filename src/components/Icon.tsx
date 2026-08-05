@@ -26,6 +26,14 @@ const PATHS = {
       <path d="M7.5 20v-5M12 20v-9M16.5 20v-3.5" />
     </>
   ),
+  // An edge with four fingers over it. Abstract on purpose: a drawn hand
+  // would be the only pictogram in the set.
+  grip: (
+    <>
+      <path d="M4 13.5h16" />
+      <path d="M7 13.5V8M11 13.5V6.5M15 13.5V7M18.5 13.5v-3" />
+    </>
+  ),
   awards: (
     <>
       <circle cx="12" cy="9.5" r="5" />

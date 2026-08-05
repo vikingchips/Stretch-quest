@@ -80,6 +80,31 @@ export function SettingsPage() {
         </button>
       </section>
 
+      <section className="mb-16">
+        <h2 className="mb-3 text-sm lowercase text-ink-soft">modules</h2>
+        <button
+          onClick={() => settings.setFingerModuleEnabled(!settings.fingerModuleEnabled)}
+          className="flex w-full items-center justify-between border-y border-line-soft py-4"
+        >
+          <span className="flex items-center gap-3 text-sm lowercase">
+            <Icon name="grip" size={18} className="text-ink-soft" />
+            finger strength
+          </span>
+          <span
+            className={`text-sm lowercase ${
+              settings.fingerModuleEnabled ? 'text-pine-deep' : 'text-ink-soft'
+            }`}
+          >
+            {settings.fingerModuleEnabled ? 'on' : 'off'}
+          </span>
+        </button>
+        <p className="measure mt-3 text-xs leading-relaxed text-ink-soft">
+          Hangboard training and testing with a Progressor-compatible force sensor — or a
+          simulated one, if you do not have the hardware. Adds a tab. Stretching works the
+          same either way.
+        </p>
+      </section>
+
       <section>
         <h2 className="mb-3 text-sm lowercase text-ink-soft">reset</h2>
         <button

@@ -9,8 +9,19 @@ export function StatsPage() {
   const progress = useProgressStore((s) => s.progress);
   const sessions = useProgressStore((s) => s.sessions);
 
-  const totalActiveSec = sessions.reduce((sum, s) => sum + s.activeSec, 0);
-  const categories: RoutineCategory[] = ['climbing', 'running', 'full-body', 'custom'];
+  // Hang time is not stretch time, so it stays out of the figure labelled
+  // 'stretched' even though both count toward the streak.
+  const totalActiveSec = sessions
+    .filter((s) => s.category !== 'fingers')
+    .reduce((sum, s) => sum + s.activeSec, 0);
+  const hasFingers = sessions.some((s) => s.category === 'fingers');
+  const categories: RoutineCategory[] = [
+    'climbing',
+    'running',
+    'full-body',
+    'custom',
+    ...(hasFingers ? (['fingers'] as const) : []),
+  ];
   const byCategory = categories.map((c) => ({
     category: c,
     count: sessions.filter((s) => s.category === c).length,

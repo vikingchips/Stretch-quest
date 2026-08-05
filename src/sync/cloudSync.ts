@@ -1,9 +1,10 @@
 import type { Routine, SessionRecord, UserProgress } from '../types';
 import { useProgressStore } from '../store/progressStore';
 import { useRoutinesStore } from '../store/routinesStore';
+import { fingerData, useFingerStore, type FingerData } from '../store/fingerStore';
 import { getSupabase, syncConfigured } from './client';
 import { useAuthStore } from './authStore';
-import { mergeProgress, mergeRoutines, mergeSessions } from './merge';
+import { mergeFinger, mergeProgress, mergeRoutines, mergeSessions } from './merge';
 import { publishProfile } from './friends';
 import { nameToSlug } from './identity';
 
@@ -42,6 +43,8 @@ interface RemoteRow {
   progress: UserProgress;
   sessions: SessionRecord[];
   routines: Routine[];
+  /** Absent on rows written before the finger module existed. */
+  finger: Partial<FingerData> | null;
 }
 
 async function pull(userId: string): Promise<RemoteRow | null> {
@@ -50,7 +53,7 @@ async function pull(userId: string): Promise<RemoteRow | null> {
   const supabase = await pending;
   const { data, error } = await supabase
     .from('user_state')
-    .select('progress, sessions, routines')
+    .select('progress, sessions, routines, finger')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -68,6 +71,7 @@ async function push(userId: string): Promise<void> {
       progress: progressStore.progress,
       sessions: progressStore.sessions,
       routines: useRoutinesStore.getState().customRoutines,
+      finger: fingerData(useFingerStore.getState()),
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
@@ -115,6 +119,9 @@ export async function syncNow(): Promise<void> {
           remote.routines ?? [],
         ),
       });
+      useFingerStore.setState(
+        mergeFinger(fingerData(useFingerStore.getState()), remote.finger),
+      );
       // A merged streak can disagree with the calendar; reconcile fixes that.
       useProgressStore.getState().reconcile();
     }
@@ -156,9 +163,11 @@ export function initCloudSync(): void {
       if (!unsubscribe) {
         const offProgress = useProgressStore.subscribe(schedulePush);
         const offRoutines = useRoutinesStore.subscribe(schedulePush);
+        const offFinger = useFingerStore.subscribe(schedulePush);
         unsubscribe = () => {
           offProgress();
           offRoutines();
+          offFinger();
         };
       }
     }

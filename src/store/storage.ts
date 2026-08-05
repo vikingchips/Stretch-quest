@@ -47,6 +47,7 @@ export const STORAGE_KEYS = {
   settings: 'sq:settings',
   progress: 'sq:progress',
   routines: 'sq:customRoutines',
+  finger: 'sq:finger',
 } as const;
 
 /** Bump per-store `version` in the persist options and migrate there. */

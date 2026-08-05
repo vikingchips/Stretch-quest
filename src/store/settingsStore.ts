@@ -11,6 +11,7 @@ interface SettingsState extends Settings {
   setRestDuration: (sec: number) => void;
   setPrepDuration: (sec: number) => void;
   setSoundEnabled: (enabled: boolean) => void;
+  setFingerModuleEnabled: (enabled: boolean) => void;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,6 +19,9 @@ export const DEFAULT_SETTINGS: Settings = {
   restDurationSec: 10,
   prepDurationSec: 5,
   soundEnabled: true,
+  // No migration needed for this one: an older persisted blob simply has no
+  // such key, which reads as undefined, which is off.
+  fingerModuleEnabled: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -30,6 +34,7 @@ export const useSettingsStore = create<SettingsState>()(
       setRestDuration: (restDurationSec) => set({ restDurationSec }),
       setPrepDuration: (prepDurationSec) => set({ prepDurationSec }),
       setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
+      setFingerModuleEnabled: (fingerModuleEnabled) => set({ fingerModuleEnabled }),
     }),
     {
       name: STORAGE_KEYS.settings,
