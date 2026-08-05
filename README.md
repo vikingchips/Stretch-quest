@@ -257,7 +257,10 @@ Three rules are enforced in code rather than left to the copy:
   reading BigBanger's MicroPython firmware as a specification.
 
 **If you already ran `supabase/schema.sql`,** run it again — the new column is
-an idempotent `alter table` and everything else is `if not exists`.
+an idempotent `alter table` and everything else is `if not exists`. There is
+no rush and no ordering to get right: a build that meets a project without the
+column falls back to syncing everything else, so stretch sessions and streaks
+keep working, and finger data starts syncing by itself once the column exists.
 
 ## The protocol
 

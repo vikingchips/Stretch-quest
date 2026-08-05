@@ -47,35 +47,68 @@ interface RemoteRow {
   finger: Partial<FingerData> | null;
 }
 
+/**
+ * The `finger` column arrived after the first release, so a deployed build can
+ * meet a project whose schema.sql has not been re-run yet.
+ *
+ * Postgres answers an unknown column with 42703. Without this, that error
+ * would come back on every read and every write and take the whole sync down
+ * with it — stretch sessions and streaks included, for a column none of them
+ * need. Falling back keeps everything except finger data working, and the
+ * moment the column exists it is picked up with no further change.
+ */
+export function isMissingColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  const message = error.message ?? '';
+  // Both halves matter. The code alone would also match some *other* column
+  // having gone missing, which is a real problem and must keep surfacing
+  // rather than being retried away.
+  return /finger/i.test(message) && (error.code === '42703' || /does not exist/i.test(message));
+}
+
+const BASE_COLUMNS = 'progress, sessions, routines';
+
 async function pull(userId: string): Promise<RemoteRow | null> {
   const pending = getSupabase();
   if (!pending) return null;
   const supabase = await pending;
-  const { data, error } = await supabase
-    .from('user_state')
-    .select('progress, sessions, routines, finger')
-    .eq('user_id', userId)
-    .maybeSingle();
+  const read = (columns: string) =>
+    supabase.from('user_state').select(columns).eq('user_id', userId).maybeSingle();
+
+  let { data, error } = await read(`${BASE_COLUMNS}, finger`);
+  if (isMissingColumn(error)) {
+    fingerColumnMissing = true;
+    ({ data, error } = await read(BASE_COLUMNS));
+  }
   if (error) throw error;
   return (data as RemoteRow | null) ?? null;
 }
+
+/** Set once a project is seen to be missing the column, so later pushes skip
+ *  it rather than failing and retrying forever. */
+let fingerColumnMissing = false;
 
 async function push(userId: string): Promise<void> {
   const pending = getSupabase();
   if (!pending) return;
   const supabase = await pending;
   const progressStore = useProgressStore.getState();
-  const { error } = await supabase.from('user_state').upsert(
-    {
-      user_id: userId,
-      progress: progressStore.progress,
-      sessions: progressStore.sessions,
-      routines: useRoutinesStore.getState().customRoutines,
-      finger: fingerData(useFingerStore.getState()),
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id' },
-  );
+  const base = {
+    user_id: userId,
+    progress: progressStore.progress,
+    sessions: progressStore.sessions,
+    routines: useRoutinesStore.getState().customRoutines,
+    updated_at: new Date().toISOString(),
+  };
+  const row = fingerColumnMissing
+    ? base
+    : { ...base, finger: fingerData(useFingerStore.getState()) };
+
+  let { error } = await supabase.from('user_state').upsert(row, { onConflict: 'user_id' });
+  if (isMissingColumn(error)) {
+    fingerColumnMissing = true;
+    ({ error } = await supabase.from('user_state').upsert(base, { onConflict: 'user_id' }));
+  }
   if (error) throw error;
 
   // The friends-visible summary rides along with every push, so a streak on
