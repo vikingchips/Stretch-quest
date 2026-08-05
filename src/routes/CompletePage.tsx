@@ -29,9 +29,14 @@ function useCountUp(target: number, durationMs = 1400): number {
   return value;
 }
 
+/** Extra line the finger module can pass through router state. */
+interface CompleteState extends SessionSummary {
+  fingerNote?: string;
+}
+
 export function CompletePage() {
   const location = useLocation();
-  const summary = location.state as SessionSummary | null;
+  const summary = location.state as CompleteState | null;
   const xpShown = useCountUp(summary?.xpBreakdown.total ?? 0);
 
   if (!summary) return <Navigate to="/" replace />;
@@ -39,10 +44,13 @@ export function CompletePage() {
   const { record, xpBreakdown, levelBefore, levelAfter, streakAfter, goalMetNow, newBadgeIds } =
     summary;
   const leveledUp = levelAfter > levelBefore;
+  // Hang time is not stretch time, and calling it that on the one screen that
+  // reports the number would be quietly wrong.
+  const timeLabel = record.category === 'fingers' ? 'time under tension' : 'stretch time';
 
   const rows: Array<[string, number]> = [
     ['session complete', xpBreakdown.base],
-    [`stretch time (${formatMinutes(record.activeSec)})`, xpBreakdown.activeTime],
+    [`${timeLabel} (${formatMinutes(record.activeSec)})`, xpBreakdown.activeTime],
     ['no skips', xpBreakdown.noSkipBonus],
     ['daily goal met', xpBreakdown.goalBonus],
     ['streak milestone', xpBreakdown.streakMilestoneBonus],
@@ -73,7 +81,13 @@ export function CompletePage() {
         </dl>
       ) : (
         <p className="measure mt-8 text-sm leading-relaxed text-ink-soft">
-          Sessions need at least a minute of stretching to earn XP and hold the streak.
+          Sessions need at least a minute of work to earn XP and hold the streak.
+        </p>
+      )}
+
+      {summary.fingerNote && (
+        <p className="measure mt-10 border-t border-line-soft pt-4 text-sm leading-relaxed text-clay">
+          {summary.fingerNote}
         </p>
       )}
 

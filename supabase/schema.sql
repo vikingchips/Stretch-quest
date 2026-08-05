@@ -13,6 +13,14 @@ create table if not exists public.user_state (
   updated_at timestamptz not null default now()
 );
 
+-- Finger-strength history: hangboard sessions, max tests and the maxes every
+-- training band is a fraction of. A column rather than its own tables — the
+-- row is already private, already policed by the four policies below, and
+-- already merged in one place. Separate tables would buy a second sync path
+-- and nothing else. Safe to re-run on an existing project.
+alter table public.user_state
+  add column if not exists finger jsonb not null default '{}'::jsonb;
+
 alter table public.user_state enable row level security;
 
 -- The publishable key is public by design, so these policies are the only

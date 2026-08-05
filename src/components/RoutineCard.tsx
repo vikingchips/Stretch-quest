@@ -11,6 +11,7 @@ export const CATEGORY_META: Record<Routine['category'], { label: string; color: 
   running: { label: 'running', color: 'var(--color-fjord)' },
   recovery: { label: 'rest day', color: 'var(--color-clay)' },
   custom: { label: 'my routine', color: 'var(--color-stone)' },
+  fingers: { label: 'fingers', color: 'var(--color-bark)' },
   // Legacy: only reachable through old session records.
   'full-body': { label: 'full body', color: 'var(--color-stone)' },
 };

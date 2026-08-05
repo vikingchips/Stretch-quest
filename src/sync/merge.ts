@@ -1,3 +1,6 @@
+import type { FingerData } from '../store/fingerStore';
+import { INITIAL_FINGER_DATA } from '../store/fingerStore';
+import type { FingerMax } from '../finger/types';
 import type { Routine, SessionRecord, UserProgress } from '../types';
 
 /**
@@ -56,6 +59,55 @@ function mergeBadges(
     if (!existing || at < existing) out[id] = at;
   }
   return out;
+}
+
+/** Union by id, as with sessions: a test is a record of something that
+ *  happened and is never edited afterwards. */
+function unionById<T extends { id: string }>(local: T[], remote: T[]): T[] {
+  const byId = new Map<string, T>();
+  for (const item of remote) byId.set(item.id, item);
+  for (const item of local) byId.set(item.id, item);
+  return [...byId.values()];
+}
+
+/**
+ * Maxes key on hand, grip and edge — three different measurements of three
+ * different things, never interchangeable. Within a key the newer test wins
+ * even when it is lower, because that is what a retest is for.
+ */
+function mergeMaxes(local: FingerMax[], remote: FingerMax[]): FingerMax[] {
+  const byKey = new Map<string, FingerMax>();
+  for (const max of [...remote, ...local]) {
+    const key = `${max.hand}:${max.grip}:${max.edgeMm}`;
+    const existing = byKey.get(key);
+    if (!existing || max.testedAt >= existing.testedAt) byKey.set(key, max);
+  }
+  return [...byKey.values()];
+}
+
+export function mergeFinger(
+  local: FingerData,
+  remote: Partial<FingerData> | null | undefined,
+): FingerData {
+  const r = { ...INITIAL_FINGER_DATA, ...(remote ?? {}) };
+  return {
+    // Settings have no timestamps to compare, so the device you are holding
+    // wins when it has an answer. The cost of getting this wrong is a
+    // re-entered bodyweight, not lost history.
+    bodyweightKg: local.bodyweightKg ?? r.bodyweightKg,
+    edges: local.edges.length > 0 ? local.edges : r.edges,
+    activeEdgeMm: local.activeEdgeMm ?? r.activeEdgeMm,
+    retestIntervalDays: local.retestIntervalDays,
+    maxes: mergeMaxes(local.maxes, r.maxes),
+    tests: unionById(local.tests, r.tests).sort((a, b) => a.testedAt.localeCompare(b.testedAt)),
+    sessions: unionById(local.sessions, r.sessions).sort((a, b) =>
+      a.startedAt.localeCompare(b.startedAt),
+    ),
+    lastAbrahangsAt:
+      (local.lastAbrahangsAt ?? '') >= (r.lastAbrahangsAt ?? '')
+        ? local.lastAbrahangsAt
+        : r.lastAbrahangsAt,
+  };
 }
 
 /** Upsert by id, newest edit wins. Routines without a timestamp lose to ones with. */

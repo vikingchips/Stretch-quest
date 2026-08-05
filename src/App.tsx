@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { useProgressStore } from './store/progressStore';
 import { useSettingsStore } from './store/settingsStore';
@@ -18,6 +18,11 @@ import { AchievementsPage } from './routes/AchievementsPage';
 import { SettingsPage } from './routes/SettingsPage';
 import { FriendsPage } from './routes/FriendsPage';
 import { AddFriendPage } from './routes/AddFriendPage';
+import { FingerHomePage } from './routes/finger/FingerHomePage';
+import { HangSessionPage } from './routes/finger/HangSessionPage';
+import { MaxTestPage } from './routes/finger/MaxTestPage';
+import { FingerHistoryPage } from './routes/finger/FingerHistoryPage';
+import { DevicePage } from './routes/finger/DevicePage';
 
 export default function App() {
   const location = useLocation();
@@ -25,6 +30,7 @@ export default function App() {
   const onboardingSeen = useSettingsStore((s) => s.onboardingSeen);
   const dismissOnboarding = useSettingsStore((s) => s.dismissOnboarding);
   const authStatus = useAuthStore((s) => s.status);
+  const fingerEnabled = useSettingsStore((s) => s.fingerModuleEnabled);
 
   useEffect(() => {
     reconcile();
@@ -45,7 +51,9 @@ export default function App() {
   }
 
   const immersive =
-    location.pathname.startsWith('/session/') || location.pathname === '/complete';
+    location.pathname.startsWith('/session/') ||
+    location.pathname.startsWith('/finger/session/') ||
+    location.pathname === '/complete';
 
   return (
     <div className="mx-auto min-h-dvh max-w-md safe-top">
@@ -62,6 +70,20 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/add/:slug" element={<AddFriendPage />} />
+        {/* The module is opt-in, so its routes only exist once it is on.
+            Turning it off takes the pages with it rather than leaving them
+            reachable by URL. */}
+        {fingerEnabled ? (
+          <>
+            <Route path="/finger" element={<FingerHomePage />} />
+            <Route path="/finger/session/:programId" element={<HangSessionPage />} />
+            <Route path="/finger/test" element={<MaxTestPage />} />
+            <Route path="/finger/history" element={<FingerHistoryPage />} />
+            <Route path="/finger/device" element={<DevicePage />} />
+          </>
+        ) : (
+          <Route path="/finger/*" element={<Navigate to="/" replace />} />
+        )}
       </Routes>
       {!immersive && <BottomNav />}
     </div>

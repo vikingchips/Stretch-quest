@@ -69,6 +69,7 @@ export type RoutineCategory =
   | 'hybrid'
   | 'recovery'
   | 'custom'
+  | 'fingers'
   | 'full-body';
 
 /**
@@ -141,6 +142,9 @@ export interface Settings {
   restDurationSec: number;
   prepDurationSec: number;
   soundEnabled: boolean;
+  /** Off by default: the stretching app is complete without it, and someone
+   *  who arrives on a shared friend link should see exactly that app. */
+  fingerModuleEnabled: boolean;
 }
 
 export interface Achievement {
