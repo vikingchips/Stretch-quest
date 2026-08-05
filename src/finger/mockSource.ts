@@ -15,7 +15,9 @@ import { SourceBase, type ForceSource } from './source';
 const SAMPLE_INTERVAL_MS = 12.5; // 80 Hz, matching the Progressor
 const TIME_CONSTANT_MS = 300;
 const NOISE_IDLE_KG = 0.06;
-const NOISE_LOADED_KG = 0.5;
+// What a 24-bit ADC on a 150 kg cell actually gives at 80 SPS. Higher would
+// make the trace hairier than the hardware it stands in for.
+const NOISE_LOADED_KG = 0.25;
 
 /** Box-Muller, so the noise is gaussian rather than uniform. */
 function gaussian(rng: () => number): number {

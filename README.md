@@ -27,6 +27,9 @@ for everything else.
   before the sign-in gate.
 - **Animated figures** — the Daily Warp exercises play as a looping pose you
   can view from the front, at an angle, or side-on.
+- **Finger strength** (optional) — hangboard training and testing against a
+  Progressor-compatible force sensor, or a simulated one. Off by default. See
+  below.
 
 ## Sync and accounts
 
@@ -176,6 +179,85 @@ and at an angle. The side view of the two floor movements is the weakest — a
 stick figure lying down has little left to show once it is edge-on. Everything
 without a pose falls back to `BodyMark`, the abstract figure that highlights
 the target area.
+
+## Finger strength
+
+An optional second half of the app: a load cell between a one-hand hangboard
+and the ceiling, an ESP32-C3 that streams force over Tindeq's open Progressor
+BLE API, and a trainer built on top of it. The firmware lives in
+[`firmware/`](firmware/) in this repo; the brief for the whole project is
+[`BRIEF.md.md`](BRIEF.md.md).
+
+**It is off until you turn it on**, in Settings → modules. The stretching app
+is complete without it, and someone arriving on a shared friend link should
+see that app rather than a hangboard tab. Turned on, `grip` replaces `awards`
+in the nav — six tabs is too many on a phone, and awards is still reachable
+from home. To ship it on for everyone, flip `fingerModuleEnabled` in
+`DEFAULT_SETTINGS`.
+
+**No hardware needed to try it.** `src/finger/mockSource.ts` is a simulated
+cell — 80 Hz, force approached with a time constant, noise that grows under
+load — behind the same `ForceSource` interface as the real device. It is a
+product feature, not a test double: pick "use a simulated device" and a slider
+drives the pull.
+
+**Web Bluetooth only works in Chrome** on Android and desktop. No iOS browser
+implements it and none is going to, so an iPhone owner uses the official
+Tindeq app with the same device. There is deliberately no workaround.
+
+### The protocol it implements
+
+Two programs, both scaled to a measured one-hand max:
+
+| Program | Band | Structure | Frequency |
+|---|---|---|---|
+| Abrahangs | 30–50% of max | 6 × 10 s / 20 s, both grips, both hands | twice a day, 6 h apart |
+| Max hangs | 85–95% of max | 6 × 10 s / 2 min, half crimp | 2–3 × a week |
+
+The combination is the point — it was the source study's only large effect.
+Note that Abrahangs sits at about **40% of max**, not the 70–80% that
+circulates: that figure is a percentage of pull force with both feet on the
+floor, a different measurement of a different thing. Low load is the
+protocol, not a compromise in it, and the summary screen says so when a
+session comes in above the band.
+
+Three rules are enforced in code rather than left to the copy:
+
+- **Bands come from that hand's own max.** There is no validated conversion
+  between hands, so a hand without a measured max is skipped, never inferred.
+- **Grade estimates only for half crimp on the ~20 mm edge**, only as an
+  interval, always with their confidence and the line that finger strength
+  explains about half the variance in boulder grade. `estimateGrade` returns
+  null otherwise and `gradeBlocker` says which rule stopped it, so the screen
+  explains itself instead of going quiet. Smaller edges are fine to train on;
+  there is simply no normative data to grade them against.
+- **Peak force is smoothed** before it counts. A 24-bit ADC at 80 SPS will
+  produce a single-sample spike eventually, and an unsmoothed peak would
+  enshrine it as your max and set every future session's load from it.
+
+### How it is wired in
+
+- A finished hang session goes through the same `completeSession` as a stretch
+  session, with a synthetic routine in the `fingers` category. Streak, daily
+  goal, XP, badges and the friends week-strip therefore work with no new code.
+  Weekly dose ignores routine ids it does not recognise, so hang time cannot
+  pollute it, and Stats keeps it out of the figure labelled "stretched".
+- **Samples never touch React.** They arrive eighty times a second;
+  `sourceManager` holds the stream outside the tree, `ForceGraph` writes its
+  path attribute from a rAF loop, and the session reducer is fed one tick's
+  batch at a time. Only connection status goes through a store.
+- Sync is a `finger` jsonb column on the existing `user_state` row rather than
+  tables of its own — that row is already private, already covered by the four
+  `auth.uid()` policies, and already merged in one place. The merge is
+  additive like the rest: sessions and tests union by id, and maxes key on
+  hand, grip and edge, with the newer test winning even when it is lower,
+  because that is what retesting is for.
+- `src/finger/progressorProtocol.ts` is the wire format on its own, testable
+  against hand-built buffers rather than against hardware. It was verified by
+  reading BigBanger's MicroPython firmware as a specification.
+
+**If you already ran `supabase/schema.sql`,** run it again — the new column is
+an idempotent `alter table` and everything else is `if not exists`.
 
 ## The protocol
 

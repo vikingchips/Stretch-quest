@@ -68,6 +68,10 @@ export interface HangState {
 export type HangEvent =
   | { type: 'TICK'; deltaMs: number }
   | { type: 'FORCE'; sample: ForceSample }
+  /** A tick's worth of samples at once. Dispatching eighty times a second
+   *  would re-render the player eighty times a second; the arithmetic is
+   *  unaffected because it runs off sample timestamps, not arrival times. */
+  | { type: 'FORCE_BATCH'; samples: ForceSample[] }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'SKIP' }
@@ -165,6 +169,12 @@ export function hangReducer(state: HangState, event: HangEvent): HangState {
         },
       };
     }
+
+    case 'FORCE_BATCH':
+      return event.samples.reduce(
+        (acc, sample) => hangReducer(acc, { type: 'FORCE', sample }),
+        state,
+      );
 
     case 'TICK': {
       if (state.status !== 'running') return state;
