@@ -10,14 +10,22 @@ import type { Routine, SessionRecord, UserProgress } from '../types';
  * recoverable, unlike a lost year of sessions.
  */
 
-/** Union by id. Ties keep the local copy, which is the one just played. */
+/**
+ * Union by id. Ties keep the local copy, which is the one just played.
+ *
+ * `deletedIds` is what makes deletion survive this: without it the union
+ * would hand a deliberately removed session straight back from whichever
+ * device synced last.
+ */
 export function mergeSessions(
   local: SessionRecord[],
   remote: SessionRecord[],
+  deletedIds: string[] = [],
 ): SessionRecord[] {
   const byId = new Map<string, SessionRecord>();
   for (const s of remote) byId.set(s.id, s);
   for (const s of local) byId.set(s.id, s);
+  for (const id of deletedIds) byId.delete(id);
   return [...byId.values()].sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 }
 
@@ -46,6 +54,11 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
     // that happened to sync second.
     unlockedBadges: mergeBadges(local.unlockedBadges, remote.unlockedBadges),
     goalMetDateKeys: unionDates(local.goalMetDateKeys, remote.goalMetDateKeys),
+    // Tombstones only ever accumulate. A deletion made on one device has to
+    // outlive every other device's copy of the session.
+    deletedSessionIds: [
+      ...new Set([...(local.deletedSessionIds ?? []), ...(remote.deletedSessionIds ?? [])]),
+    ],
   };
 }
 
@@ -88,8 +101,12 @@ function mergeMaxes(local: FingerMax[], remote: FingerMax[]): FingerMax[] {
 export function mergeFinger(
   local: FingerData,
   remote: Partial<FingerData> | null | undefined,
+  /** Shares the main history's tombstones — a finger session keeps its detail
+   *  here under the same id the SessionRecord uses. */
+  deletedIds: string[] = [],
 ): FingerData {
   const r = { ...INITIAL_FINGER_DATA, ...(remote ?? {}) };
+  const deleted = new Set(deletedIds);
   return {
     // Settings have no timestamps to compare, so the device you are holding
     // wins when it has an answer. The cost of getting this wrong is a
@@ -100,9 +117,9 @@ export function mergeFinger(
     retestIntervalDays: local.retestIntervalDays,
     maxes: mergeMaxes(local.maxes, r.maxes),
     tests: unionById(local.tests, r.tests).sort((a, b) => a.testedAt.localeCompare(b.testedAt)),
-    sessions: unionById(local.sessions, r.sessions).sort((a, b) =>
-      a.startedAt.localeCompare(b.startedAt),
-    ),
+    sessions: unionById(local.sessions, r.sessions)
+      .filter((s) => !deleted.has(s.id))
+      .sort((a, b) => a.startedAt.localeCompare(b.startedAt)),
     lastAbrahangsAt:
       (local.lastAbrahangsAt ?? '') >= (r.lastAbrahangsAt ?? '')
         ? local.lastAbrahangsAt

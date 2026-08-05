@@ -13,6 +13,7 @@ import { levelForXp } from '../game/levels';
 import { countActiveDay, evaluateStreak, STARTING_FREEZES } from '../game/streak';
 import { sessionsOnDay } from '../game/dailyGoal';
 import { checkAchievements } from '../game/achievementEngine';
+import { recomputeProgress } from '../game/recompute';
 import { localStorageAdapter, SCHEMA_VERSION, STORAGE_KEYS } from './storage';
 import { useRoutinesStore } from './routinesStore';
 
@@ -21,6 +22,8 @@ const MAX_GOAL_DAYS = 60;
 
 export const INITIAL_PROGRESS: UserProgress = {
   xp: 0,
+  xpArchived: 0,
+  deletedSessionIds: [],
   streak: 0,
   longestStreak: 0,
   lastActiveDateKey: null,
@@ -49,6 +52,8 @@ interface ProgressState {
   /** Reconcile streak with the calendar. Call on app launch. */
   reconcile: () => void;
   completeSession: (input: CompleteSessionInput) => SessionSummary;
+  /** Remove a session and rebuild everything derived from the history. */
+  deleteSession: (id: string) => void;
   /** Direct unlock for non-session achievements (e.g. saving a custom routine). */
   unlockBadge: (id: string) => void;
   resetAll: () => void;
@@ -145,7 +150,14 @@ export const useProgressStore = create<ProgressState>()(
           stepsTotal: input.stepsTotal,
           xpEarned: xpBreakdown.total,
         };
-        const sessions = [...state.sessions, record].slice(-MAX_SESSIONS);
+        const kept = [...state.sessions, record];
+        const trimmed = kept.slice(-MAX_SESSIONS);
+        // XP is summed from the sessions on hand, so anything the cap drops
+        // has to be banked or it would silently vanish from the total.
+        const archived =
+          (progress.xpArchived ?? 0) +
+          kept.slice(0, kept.length - trimmed.length).reduce((sum, s) => sum + s.xpEarned, 0);
+        const sessions = trimmed;
 
         // 6. Assemble updated progress.
         let goalMetDateKeys = progress.goalMetDateKeys;
@@ -155,6 +167,7 @@ export const useProgressStore = create<ProgressState>()(
         const nextProgress: UserProgress = {
           ...progress,
           xp: progress.xp + xpBreakdown.total,
+          xpArchived: archived,
           streak: counted.streak,
           longestStreak: Math.max(progress.longestStreak, counted.streak),
           lastActiveDateKey: qualifies ? today : lastActiveDateKey,
@@ -190,6 +203,22 @@ export const useProgressStore = create<ProgressState>()(
           goalMetNow: metNow,
           newBadgeIds,
         };
+      },
+
+      deleteSession: (id) => {
+        const state = get();
+        if (!state.sessions.some((s) => s.id === id)) return;
+        const sessions = state.sessions.filter((s) => s.id !== id);
+        const rebuilt = recomputeProgress(state.progress, sessions, todayKey());
+        set({
+          sessions,
+          progress: {
+            ...state.progress,
+            ...rebuilt,
+            // A tombstone, so the next sync does not hand it straight back.
+            deletedSessionIds: [...(state.progress.deletedSessionIds ?? []), id],
+          },
+        });
       },
 
       unlockBadge: (id) => {

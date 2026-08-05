@@ -14,6 +14,7 @@ import { SessionPage } from './routes/SessionPage';
 import { CompletePage } from './routes/CompletePage';
 import { BuilderPage } from './routes/BuilderPage';
 import { StatsPage } from './routes/StatsPage';
+import { HistoryPage } from './routes/HistoryPage';
 import { AchievementsPage } from './routes/AchievementsPage';
 import { SettingsPage } from './routes/SettingsPage';
 import { FriendsPage } from './routes/FriendsPage';
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="/builder" element={<BuilderPage />} />
         <Route path="/builder/:id" element={<BuilderPage />} />
         <Route path="/stats" element={<StatsPage />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="/achievements" element={<AchievementsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/friends" element={<FriendsPage />} />

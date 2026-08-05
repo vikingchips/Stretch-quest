@@ -5,6 +5,8 @@ import { fingerData, useFingerStore, type FingerData } from '../store/fingerStor
 import { getSupabase, syncConfigured } from './client';
 import { useAuthStore } from './authStore';
 import { mergeFinger, mergeProgress, mergeRoutines, mergeSessions } from './merge';
+import { recomputeProgress } from '../game/recompute';
+import { todayKey } from '../game/dates';
 import { publishProfile } from './friends';
 import { nameToSlug } from './identity';
 
@@ -142,9 +144,20 @@ export async function syncNow(): Promise<void> {
     const remote = await pull(userId);
     if (remote) {
       const progressStore = useProgressStore.getState();
+      const progress = mergeProgress(progressStore.progress, remote.progress);
+      // Tombstones are merged first, so a session deleted on any device stays
+      // deleted here rather than being handed back by the union.
+      const sessions = mergeSessions(
+        progressStore.sessions,
+        remote.sessions ?? [],
+        progress.deletedSessionIds ?? [],
+      );
       useProgressStore.setState({
-        progress: mergeProgress(progressStore.progress, remote.progress),
-        sessions: mergeSessions(progressStore.sessions, remote.sessions ?? []),
+        // Streak, XP and the met-goal days are claims about this list, so
+        // they are rebuilt from it rather than merged field by field —
+        // otherwise a deletion would be undone by the larger remote value.
+        progress: { ...progress, ...recomputeProgress(progress, sessions, todayKey()) },
+        sessions,
       });
       useRoutinesStore.setState({
         customRoutines: mergeRoutines(
@@ -153,7 +166,11 @@ export async function syncNow(): Promise<void> {
         ),
       });
       useFingerStore.setState(
-        mergeFinger(fingerData(useFingerStore.getState()), remote.finger),
+        mergeFinger(
+          fingerData(useFingerStore.getState()),
+          remote.finger,
+          progress.deletedSessionIds ?? [],
+        ),
       );
       // A merged streak can disagree with the calendar; reconcile fixes that.
       useProgressStore.getState().reconcile();

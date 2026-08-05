@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import { useProgressStore } from '../store/progressStore';
+import { Icon } from '../components/Icon';
 import { HeatmapCalendar } from '../components/HeatmapCalendar';
 import { CATEGORY_META } from '../components/RoutineCard';
 import type { RoutineCategory } from '../types';
@@ -41,7 +43,7 @@ export function StatsPage() {
     <main className="px-6 pb-28 pt-10">
       <h1 className="mb-10 text-2xl lowercase tracking-wide">stats</h1>
 
-      <dl className="mb-14 grid grid-cols-3 gap-6 border-y border-line-soft py-6">
+      <dl className="grid grid-cols-3 gap-6 border-y border-line-soft py-6">
         {totals.map(([label, value]) => (
           <div key={label}>
             <dd className="display text-2xl leading-none tabular-nums">{value}</dd>
@@ -49,6 +51,14 @@ export function StatsPage() {
           </div>
         ))}
       </dl>
+
+      <Link
+        to="/history"
+        className="mb-14 flex items-center justify-between border-b border-line-soft py-4 text-sm lowercase text-ink-soft hover:text-ink"
+      >
+        every session
+        <Icon name="chevronRight" size={16} />
+      </Link>
 
       {dose.length > 0 && (
         <section className="mb-14">

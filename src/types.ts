@@ -122,6 +122,14 @@ export interface SessionRecord {
 export interface UserProgress {
   /** Lifetime XP. Level is always derived, never stored. */
   xp: number;
+  /**
+   * XP from sessions the history cap has since trimmed away.
+   *
+   * XP is otherwise derived by summing the sessions you still have, so that
+   * deleting one lowers it honestly. Without this, passing the cap would
+   * quietly start deleting XP too.
+   */
+  xpArchived?: number;
   streak: number;
   longestStreak: number;
   lastActiveDateKey: string | null;
@@ -132,6 +140,12 @@ export interface UserProgress {
   unlockedBadges: Record<string, string>;
   /** Days on which the daily goal was met. */
   goalMetDateKeys: string[];
+  /**
+   * Sessions deleted on purpose. Kept as tombstones rather than simply
+   * dropped: the merge is additive, so without a record of the deletion a
+   * second device would hand the session straight back on the next sync.
+   */
+  deletedSessionIds?: string[];
 }
 
 /** 'auto' lets each exercise use the angle it reads best from. */

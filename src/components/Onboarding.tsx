@@ -47,7 +47,7 @@ function Art({ kind }: { kind: Page['art'] }) {
   if (kind === 'split') {
     return (
       <div className="flex items-center gap-4 text-xs lowercase text-ink-soft">
-        <span className="border border-line px-3 py-2">before you go</span>
+        <span className="border border-line px-3 py-2">before training</span>
         <span className="h-px w-6 bg-line" />
         <span className="border border-pine px-3 py-2 text-pine-deep">rest day</span>
       </div>

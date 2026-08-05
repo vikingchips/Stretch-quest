@@ -48,14 +48,14 @@ export function LibraryPage() {
     },
     {
       key: 'pre-activity',
-      title: 'before you go',
-      note: 'Dynamic only, so nothing is taken off the top of your session.',
+      title: 'warm up before training',
+      note: 'Dynamic only, so it buys you range without taking anything off the top of the session it precedes.',
       routines: BUILTIN_ROUTINES.filter((r) => r.timing === 'pre-activity'),
     },
     {
       key: 'recovery',
-      title: 'away from performance',
-      note: 'Loaded and static work. This is where range is actually built.',
+      title: 'rest days, or hours after training',
+      note: 'Long holds and loaded work — where range is actually built. It costs force for a few hours afterwards, which is the whole reason it is kept away from a session rather than put before one.',
       routines: BUILTIN_ROUTINES.filter((r) => r.timing === 'away-from-performance'),
     },
     {

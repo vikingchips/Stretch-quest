@@ -53,6 +53,8 @@ interface FingerState extends FingerData {
   setRetestInterval: (days: number) => void;
   recordTest: (tests: FingerTestRecord[], maxes: FingerMax[]) => void;
   recordSession: (session: FingerSessionRecord) => void;
+  /** Drop the detail for a session removed from the main history. */
+  deleteSession: (id: string) => void;
   currentMax: (hand: Hand, grip: Grip) => FingerMax | undefined;
   /** Days since the newest half-crimp test, or null if there has never been one. */
   daysSinceTest: () => number | null;
@@ -94,6 +96,12 @@ export const useFingerStore = create<FingerState>()(
           lastAbrahangsAt:
             session.programId === 'abrahangs' ? session.startedAt : state.lastAbrahangsAt,
         })),
+
+      deleteSession: (id) =>
+        set((state) => {
+          if (!state.sessions.some((s) => s.id === id)) return state;
+          return { sessions: state.sessions.filter((s) => s.id !== id) };
+        }),
 
       currentMax: (hand, grip) => findMax(get().maxes, hand, grip, get().activeEdgeMm),
 
