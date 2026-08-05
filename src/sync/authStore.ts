@@ -28,6 +28,11 @@ function explain(raw: string): string {
   if (message.includes('already registered') || message.includes('already been registered')) {
     return 'That name is taken. Pick another, or sign in if it is yours.';
   }
+  // The addresses are synthetic, so a confirmation can never arrive. Seeing
+  // this means the project still has "Confirm email" switched on.
+  if (message.includes('not confirmed')) {
+    return 'This account is waiting on a confirmation that cannot arrive. Sign-in needs "Confirm email" turned off in Supabase.';
+  }
   // Never blame the name for this: the address is built from the Supabase
   // project host, so a rejection here is a setup problem, not something the
   // person typing can fix by choosing differently.
