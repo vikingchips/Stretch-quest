@@ -133,7 +133,11 @@ export interface UserProgress {
   goalMetDateKeys: string[];
 }
 
+/** 'auto' lets each exercise use the angle it reads best from. */
+export type ViewAngle = 'auto' | 'front' | 'three-quarter' | 'side';
+
 export interface Settings {
+  viewAngle: ViewAngle;
   restDurationSec: number;
   prepDurationSec: number;
   soundEnabled: boolean;

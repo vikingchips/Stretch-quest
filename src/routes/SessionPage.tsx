@@ -17,6 +17,8 @@ import {
 } from '../session/audio';
 import { ScreenWakeLock } from '../session/wakeLock';
 import { BodyMark } from '../components/BodyMark';
+import { PoseFigure } from '../components/PoseFigure';
+import { hasAnimation, VIEW_AZIMUTH } from '../anim/poses';
 import { Icon } from '../components/Icon';
 import { formatClock } from '../lib/format';
 
@@ -123,6 +125,7 @@ export function SessionPage() {
   const paused = state.status === 'paused';
   const progressPct = Math.round(overallProgress(state) * 100);
   const selfPaced = Boolean(segment.selfPaced);
+  const animated = Boolean(segment.exerciseId && hasAnimation(segment.exerciseId));
   const clock = selfPaced ? state.elapsedMs / 1000 : state.remainingMs / 1000;
 
   return (
@@ -155,8 +158,33 @@ export function SessionPage() {
 
         {segment.kind === 'stretch' && exercise ? (
           <>
-            <div className="mt-10">
-              <BodyMark areas={exercise.targetAreas} size="xl" />
+            <div className="mt-8 flex flex-col items-center">
+              {animated ? (
+                <PoseFigure
+                  exerciseId={segment.exerciseId!}
+                  size={150}
+                  azimuth={
+                    settings.viewAngle === 'auto' ? undefined : VIEW_AZIMUTH[settings.viewAngle]
+                  }
+                />
+              ) : (
+                <BodyMark areas={exercise.targetAreas} size="xl" />
+              )}
+              {animated && (
+                <div className="mt-3 flex gap-5">
+                  {(['front', 'three-quarter', 'side'] as const).map((view) => (
+                    <button
+                      key={view}
+                      onClick={() => settings.setViewAngle(view)}
+                      className={`text-[11px] lowercase ${
+                        settings.viewAngle === view ? 'text-ink' : 'text-ink-soft hover:text-ink'
+                      }`}
+                    >
+                      {view === 'three-quarter' ? 'angled' : view}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <h1 className="mt-8 text-2xl lowercase">{exercise.name}</h1>
             <p className="measure mt-3 text-sm leading-relaxed text-ink-soft">

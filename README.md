@@ -25,6 +25,8 @@ for everything else.
   keeping their routine this week.
 - **First-run tour** — four pages explaining the timing split, shown once,
   before the sign-in gate.
+- **Animated figures** — the Daily Warp exercises play as a looping pose you
+  can view from the front, at an angle, or side-on.
 
 ## Sync and accounts
 
@@ -123,6 +125,35 @@ debounce. The merge (`src/sync/merge.ts`, unit-tested) is deliberately
 additive — sessions union by id, badge unlocks keep the earliest timestamp,
 date sets union, scalars take the larger value. Signing in on a second device
 can therefore never delete history. Sign-out leaves local data untouched.
+
+## Animated poses
+
+The figure in a session is a skeleton of eighteen joints stored in 3D and
+projected to 2D (`src/anim/skeleton.ts`). That is deliberately not a model:
+there is no mesh, no texture and no asset, so one pose definition serves every
+camera angle instead of needing a drawing per view, and the whole system adds
+nothing to the bundle beyond a few numbers.
+
+Poses are written as **direction vectors, not positions** — `thighL: [0.3,
+0.35, 1.05]` rather than a coordinate. Bone lengths come from the rig, so a
+limb cannot stretch no matter how a pose is written. Axes are x right, y down
+to match SVG, z toward the viewer; the figure faces +z.
+
+Each exercise in `src/anim/poses.ts` is two keyframes that the figure eases
+between, which is what most mobility work is: an oscillation into and out of a
+position. It also carries the angle and elevation it reads best from — floor
+and seated work is illegible without the camera looking down at it.
+
+**Authoring is done by eye, not by imagination.** `npx vite-node
+scripts/pose-sheet.ts` renders every pose at three angles, both keyframes, into
+`/tmp/pose-sheet.png`. Tuning vectors without looking at that sheet does not
+work.
+
+Coverage is the eight Daily Warp exercises. Standing and lunging movements read
+well; the floor and rotation ones — the glute bridge and the 90/90 switch — are
+the weakest, which is the known limit of a stick figure rather than a tuning
+problem. Everything without a pose falls back to `BodyMark`, the abstract
+figure that highlights the target area.
 
 ## The protocol
 
