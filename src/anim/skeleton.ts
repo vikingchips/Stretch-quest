@@ -177,8 +177,12 @@ export function project(point: Vec3, camera: Camera): Projected {
 
   const rx = x * Math.cos(az) + z * Math.sin(az);
   const rz = -x * Math.sin(az) + z * Math.cos(az);
-  const ry = y * Math.cos(el) - rz * Math.sin(el);
-  const depth = y * Math.sin(el) + rz * Math.cos(el);
+  // Positive elevation puts the camera above the horizon, so a point nearer
+  // the viewer sits lower on the screen and higher ground reads as further
+  // up. Getting this backwards tilts the camera under the floor, which is
+  // what made the seated and lying poses look like tents.
+  const ry = y * Math.cos(el) + rz * Math.sin(el);
+  const depth = -y * Math.sin(el) + rz * Math.cos(el);
 
   return { x: rx, y: ry, depth };
 }
@@ -215,16 +219,44 @@ export function blend(a: Skeleton, b: Skeleton, t: number): Skeleton {
   return out;
 }
 
-/** Fit a projected figure into a viewBox, preserving aspect. */
-export function fit(
-  joints: Record<JointName, Projected>,
+/**
+ * Where to draw the ground, before fitting.
+ *
+ * A lying or seated figure is close to unreadable without one, and it costs a
+ * single hairline. Drawn as a baseline under the whole cycle rather than as
+ * the true floor plane: seen from above, a plane spreads vertically with
+ * depth, so a line through it would cut across the near foot. Under
+ * everything is unambiguous, and taking it across every frame stops it
+ * following a swinging foot up and down.
+ */
+export function groundY(frames: ReadonlyArray<Skeleton>, camera: Camera): number {
+  return Math.max(
+    ...frames.flatMap((f) => Object.values(f).map((p) => project(p, camera).y)),
+  );
+}
+
+export interface FitTransform {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+/**
+ * The box-fitting transform for a whole set of frames at once.
+ *
+ * Fitting each frame on its own would rescale and recentre the figure every
+ * time a limb moved — a swinging leg would pump the whole body. One transform
+ * for the entire cycle keeps it planted.
+ */
+export function fitTransform(
+  frames: ReadonlyArray<ReadonlyArray<Pick<Projected, 'x' | 'y'>>>,
   width: number,
   height: number,
   padding = 6,
-): Record<JointName, Projected> {
-  const values = Object.values(joints);
-  const xs = values.map((p) => p.x);
-  const ys = values.map((p) => p.y);
+): FitTransform {
+  const points = frames.flat();
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
   const minX = Math.min(...xs);
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
@@ -233,13 +265,34 @@ export function fit(
     (width - padding * 2) / Math.max(1, maxX - minX),
     (height - padding * 2) / Math.max(1, maxY - minY),
   );
-  const offsetX = (width - (maxX - minX) * scale) / 2 - minX * scale;
-  const offsetY = (height - (maxY - minY) * scale) / 2 - minY * scale;
+  return {
+    scale,
+    offsetX: (width - (maxX - minX) * scale) / 2 - minX * scale,
+    offsetY: (height - (maxY - minY) * scale) / 2 - minY * scale,
+  };
+}
 
+export function place<T extends Pick<Projected, 'x' | 'y'>>(point: T, t: FitTransform): T {
+  return { ...point, x: point.x * t.scale + t.offsetX, y: point.y * t.scale + t.offsetY };
+}
+
+export function applyFit(
+  joints: Record<JointName, Projected>,
+  t: FitTransform,
+): Record<JointName, Projected> {
   const out = {} as Record<JointName, Projected>;
   for (const name of Object.keys(joints) as JointName[]) {
-    const p = joints[name];
-    out[name] = { x: p.x * scale + offsetX, y: p.y * scale + offsetY, depth: p.depth };
+    out[name] = place(joints[name], t);
   }
   return out;
+}
+
+/** Fit a single projected figure into a viewBox, preserving aspect. */
+export function fit(
+  joints: Record<JointName, Projected>,
+  width: number,
+  height: number,
+  padding = 6,
+): Record<JointName, Projected> {
+  return applyFit(joints, fitTransform([Object.values(joints)], width, height, padding));
 }

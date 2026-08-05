@@ -144,16 +144,38 @@ between, which is what most mobility work is: an oscillation into and out of a
 position. It also carries the angle and elevation it reads best from — floor
 and seated work is illegible without the camera looking down at it.
 
+Four things carry most of the legibility, and all four are cheap:
+
+- **A ground line.** One hairline under the figure. A lying or seated pose is
+  close to unreadable without it. Drawn as a baseline below the whole cycle
+  rather than as the true floor plane, which from a raised camera spreads
+  vertically with depth and would cut across the near foot.
+- **Every keyframe stands on that floor** (`grounded` in `poses.ts`). Poses are
+  authored as angles, so where the chain of bones happens to end is an accident
+  — without this the squat keyframe hangs below the standing one it eases from
+  and the figure sinks through the ground and bobs back out.
+- **One fit transform per cycle, not per frame** (`fitTransform`). Fitting each
+  frame on its own rescales the whole body around a swinging leg.
+- **Floor poses are turned on the spot** (`turned`). The three view buttons are
+  absolute angles, so a body laid along one world axis is inevitably end-on
+  from one of them, and a bridge seen down its own length is a scribble. On a
+  diagonal its long axis keeps 82%, 100% and 71% of its length across the three
+  views.
+
+Positive elevation means the camera is above the horizon: nearer points sit
+lower on the screen. The inverse convention puts it under the floor, and the
+poses that suffer are exactly the ones that need elevation most.
+
 **Authoring is done by eye, not by imagination.** `npx vite-node
 scripts/pose-sheet.ts` renders every pose at three angles, both keyframes, into
 `/tmp/pose-sheet.png`. Tuning vectors without looking at that sheet does not
-work.
+work; the script mirrors what `PoseFigure` draws so the sheet can be trusted.
 
-Coverage is the eight Daily Warp exercises. Standing and lunging movements read
-well; the floor and rotation ones — the glute bridge and the 90/90 switch — are
-the weakest, which is the known limit of a stick figure rather than a tuning
-problem. Everything without a pose falls back to `BodyMark`, the abstract
-figure that highlights the target area.
+Coverage is the eight Daily Warp exercises, and all eight read from the front
+and at an angle. The side view of the two floor movements is the weakest — a
+stick figure lying down has little left to show once it is edge-on. Everything
+without a pose falls back to `BodyMark`, the abstract figure that highlights
+the target area.
 
 ## The protocol
 

@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { BONES, blend, buildSkeleton, fit, project, projectSkeleton } from './skeleton';
+import {
+  BONES,
+  applyFit,
+  blend,
+  buildSkeleton,
+  fit,
+  fitTransform,
+  groundY,
+  project,
+  projectSkeleton,
+} from './skeleton';
 
 const NEUTRAL = buildSkeleton({});
 
@@ -65,6 +75,18 @@ describe('project', () => {
     expect(span(far)).toBeCloseTo(span(near), 6);
   });
 
+  it('puts the camera above the horizon at positive elevation', () => {
+    // Two points on the same floor: the one nearer the viewer has to land
+    // lower on screen. Getting this backwards puts the camera under the
+    // floor, which is what made the lying and seated poses illegible.
+    const camera = { azimuth: 0, elevation: 30 };
+    const near = project([0, 20, 10], camera);
+    const far = project([0, 20, -10], camera);
+    expect(near.y).toBeGreaterThan(far.y);
+    // And standing up from that floor moves you up the screen.
+    expect(project([0, 0, 0], camera).y).toBeLessThan(project([0, 20, 0], camera).y);
+  });
+
   it('reports depth so nearer limbs can be drawn differently', () => {
     const near = project([0, 0, 5], { azimuth: 0, elevation: 0 });
     const far = project([0, 0, -5], { azimuth: 0, elevation: 0 });
@@ -85,6 +107,19 @@ describe('blend', () => {
   });
 });
 
+describe('groundY', () => {
+  it('sits under every joint of every frame', () => {
+    const camera = { azimuth: 25, elevation: 20 };
+    const frames = [NEUTRAL, buildSkeleton({ thighL: [0.9, 0.2, 0.4], shinL: [0.2, 1, 0] })];
+    const ground = groundY(frames, camera);
+    for (const frame of frames) {
+      for (const joint of Object.values(frame)) {
+        expect(project(joint, camera).y).toBeLessThanOrEqual(ground);
+      }
+    }
+  });
+});
+
 describe('fit', () => {
   it('keeps the whole figure inside the box', () => {
     const joints = fit(projectSkeleton(NEUTRAL, { azimuth: 30, elevation: 10 }), 100, 135);
@@ -94,6 +129,16 @@ describe('fit', () => {
       expect(p.y).toBeGreaterThanOrEqual(0);
       expect(p.y).toBeLessThanOrEqual(135);
     }
+  });
+
+  it('holds the figure still when only one limb moves', () => {
+    // Fitting frame by frame would rescale the whole body around a swinging
+    // leg. One transform for the cycle is what keeps the rest planted.
+    const camera = { azimuth: 20, elevation: 10 };
+    const a = projectSkeleton(NEUTRAL, camera);
+    const b = projectSkeleton(buildSkeleton({ thighL: [0.2, -0.9, 0.6] }), camera);
+    const t = fitTransform([Object.values(a), Object.values(b)], 100, 135);
+    expect(applyFit(a, t).pelvis).toEqual(applyFit(b, t).pelvis);
   });
 
   it('scales without distorting — a limb keeps its proportion', () => {

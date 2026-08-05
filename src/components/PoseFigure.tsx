@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BONES,
+  applyFit,
   blend,
-  fit,
+  fitTransform,
+  groundY,
+  place,
   projectSkeleton,
   type Camera,
   type JointName,
@@ -59,25 +62,37 @@ export function PoseFigure({ exerciseId, size = 128, azimuth, still }: Props) {
     return () => cancelAnimationFrame(frameRef.current);
   }, [frozen, animation]);
 
-  if (!animation) return null;
-
-  const [a, b] = animation.keyframes;
-  // A cycle runs there and back, so the movement loops without a jump cut.
-  const t = phase < 0.5 ? easeInOut(phase * 2) : easeInOut((1 - phase) * 2);
-  const skeleton: Skeleton = frozen ? a : blend(a, b, t);
-
-  const camera: Camera = {
-    azimuth: azimuth ?? animation.bestAzimuth,
-    elevation: animation.bestElevation ?? ELEVATION,
-  };
   const height = size * 1.35;
   // Sized from the figure, not from the neck-to-head segment: that segment
   // foreshortens as the camera turns, which made the head balloon side-on
   // and vanish when the figure lies down.
   const headRadius = size * 0.075;
-  // fit() only knows about joint positions, so without this the head circle
-  // is drawn outside the box and clipped.
-  const joints = fit(projectSkeleton(skeleton, camera), size, height, headRadius + 3);
+
+  const camera: Camera = {
+    azimuth: azimuth ?? animation?.bestAzimuth ?? 0,
+    elevation: animation?.bestElevation ?? ELEVATION,
+  };
+
+  // One transform for the whole cycle, so a swinging limb moves the limb
+  // rather than rescaling the figure around it. The padding covers the head
+  // circle, which fitting only knows joint positions and would otherwise clip.
+  const layout = useMemo(() => {
+    if (!animation) return null;
+    const frames = animation.keyframes.map((k) => projectSkeleton(k, camera));
+    const ground = groundY(animation.keyframes, camera);
+    const bounds = frames.map((f) => [...Object.values(f), { x: 0, y: ground }]);
+    const transform = fitTransform(bounds, size, height, headRadius + 3);
+    return { transform, ground: place({ x: 0, y: ground }, transform).y };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animation, camera.azimuth, camera.elevation, size, height, headRadius]);
+
+  if (!animation || !layout) return null;
+
+  const [a, b] = animation.keyframes;
+  // A cycle runs there and back, so the movement loops without a jump cut.
+  const t = phase < 0.5 ? easeInOut(phase * 2) : easeInOut((1 - phase) * 2);
+  const skeleton: Skeleton = frozen ? a : blend(a, b, t);
+  const joints = applyFit(projectSkeleton(skeleton, camera), layout.transform);
 
   const depths = Object.values(joints).map((p: Projected) => p.depth);
   const spread = Math.max(...depths.map(Math.abs), 1);
@@ -95,6 +110,14 @@ export function PoseFigure({ exerciseId, size = 128, azimuth, still }: Props) {
       className="shrink-0"
       aria-hidden="true"
     >
+      <line
+        x1={0}
+        y1={layout.ground}
+        x2={size}
+        y2={layout.ground}
+        stroke="var(--color-line)"
+        strokeWidth={1}
+      />
       {BONES.map(([from, to]) => {
         const p = joints[from as JointName];
         const q = joints[to as JointName];

@@ -1,4 +1,4 @@
-import { buildSkeleton, type PoseSpec, type Skeleton } from './skeleton';
+import { buildSkeleton, type JointName, type PoseSpec, type Skeleton, type Vec3 } from './skeleton';
 
 /**
  * Poses for the Daily Warp exercises.
@@ -24,11 +24,63 @@ export interface ExerciseAnimation {
 
 const FLOOR = 31;
 
+/** How far the two floor exercises are turned on the spot. See turned(). */
+const BRIDGE_TURN = 35;
+const NINETY_TURN = 20;
+
 function pose(spec: PoseSpec): Skeleton {
   return buildSkeleton(spec);
 }
 
-const ANIMATIONS: Record<string, ExerciseAnimation> = {
+/** Rotate a direction about the vertical axis. Body +x swings toward +z. */
+function rotY(v: Vec3, deg: number): Vec3 {
+  const a = (deg * Math.PI) / 180;
+  const [x, y, z] = v;
+  return [x * Math.cos(a) - z * Math.sin(a), y, x * Math.sin(a) + z * Math.cos(a)];
+}
+
+/**
+ * Turn a whole pose on the spot.
+ *
+ * Written for the poses that happen on the floor. The three view buttons are
+ * absolute angles, so a body laid out along one world axis is inevitably
+ * end-on from one of them — a bridge seen down its own length is a scribble.
+ * Laying it on a diagonal instead costs the same nothing and leaves the long
+ * axis 82%, 100% and 71% of its true length across the three views, so all
+ * three stay readable.
+ */
+function turned(spec: PoseSpec, deg: number): PoseSpec {
+  const out: Record<string, Vec3> = {};
+  for (const [key, value] of Object.entries(spec)) {
+    out[key] = rotY(value as Vec3, deg);
+  }
+  return out as PoseSpec;
+}
+
+/**
+ * Drop every keyframe onto a shared floor.
+ *
+ * Poses are authored as angles, so the height the chain of bones happens to
+ * end at is an accident of those angles — a squat keyframe would hang below
+ * the standing one it eases from, and the figure would sink through the
+ * ground and bob back out. Planting each keyframe's lowest point on the same
+ * line means the feet stay put and the body moves over them.
+ */
+function grounded(keyframes: Skeleton[]): Skeleton[] {
+  return keyframes.map((k) => {
+    const lowest = Math.max(...Object.values(k).map((p) => p[1]));
+    const shift = FLOOR - lowest;
+    if (shift === 0) return k;
+    const out = {} as Skeleton;
+    for (const name of Object.keys(k) as JointName[]) {
+      const [x, y, z] = k[name];
+      out[name] = [x, y + shift, z];
+    }
+    return out;
+  });
+}
+
+const RAW: Record<string, ExerciseAnimation> = {
   // Standing, one leg swinging like a pendulum. Reads from the side.
   'leg-swings-sagittal': {
     bestAzimuth: 78,
@@ -98,23 +150,30 @@ const ANIMATIONS: Record<string, ExerciseAnimation> = {
 
   // Wide stance, weight sinking over one bent leg while the other stays long.
   'cossack-squat': {
-    bestAzimuth: 12,
+    // Turned enough to see the bent knee travel forward; straight on, that
+    // leg disappears into the depth axis and the pose reads as the splits.
+    bestAzimuth: 35,
     cycleMs: 3600,
     keyframes: [
       pose({
-        thighL: [0.7, 0.85, 0], shinL: [-0.1, 1, 0],
-        thighR: [-0.7, 0.85, 0], shinR: [0.1, 1, 0],
-        upperArmL: [0.3, 0.35, 0.85], foreArmL: [0.05, 0.1, 1],
-        upperArmR: [-0.3, 0.35, 0.85], foreArmR: [-0.05, 0.1, 1],
+        thighL: [0.62, 0.79, 0], shinL: [-0.09, 1, 0],
+        thighR: [-0.62, 0.79, 0], shinR: [0.09, 1, 0],
+        upperArmL: [0.3, 0.4, 0.85], foreArmL: [0.05, 0.15, 1],
+        upperArmR: [-0.3, 0.4, 0.85], foreArmR: [-0.05, 0.15, 1],
       }),
       pose({
-        root: [6, 12, 0],
-        spine: [0, -1, 0.2],
-        thighL: [0.5, 0.75, 0.35], shinL: [-0.55, 1, -0.25],
-        thighR: [-1, 0.28, 0], shinR: [-1, 0.3, 0],
-        footR: [-0.35, -1, 0.25],
-        upperArmL: [0.25, 0.2, 0.95], foreArmL: [0, 0.05, 1],
-        upperArmR: [-0.25, 0.2, 0.95], foreArmR: [0, 0.05, 1],
+        // The pelvis travels sideways over the bent leg as it drops, which is
+        // the whole movement — sinking straight down is a squat, not a Cossack.
+        root: [4, 20, 0],
+        spine: [0.06, -1, 0.28],
+        // Knee well forward of the foot: the only way a hip gets this low.
+        thighL: [0.45, -0.15, 0.88], shinL: [0.1, 0.893, -0.44],
+        footL: [0.15, 0.02, 0.99],
+        // Long leg all but flat, heel down, toes up.
+        thighR: [-0.9, 0.44, 0], shinR: [-1, 0.28, 0],
+        footR: [-0.35, -0.94, 0],
+        upperArmL: [0.2, 0.25, 0.95], foreArmL: [0, 0.1, 1],
+        upperArmR: [-0.2, 0.25, 0.95], foreArmR: [0, 0.1, 1],
       }),
     ],
   },
@@ -145,64 +204,96 @@ const ANIMATIONS: Record<string, ExerciseAnimation> = {
   },
 
   // On the back, hips held up, knees lifting one at a time.
+  // Written along the body's own axis and then turned, so no view is end-on.
   'glute-bridge-march': {
-    // Lying along the x axis, so the side view is azimuth 0 — looking from
-    // 90 would stare down the length of the body.
-    bestAzimuth: 6,
-    bestElevation: 34,
+    bestAzimuth: 35,
+    bestElevation: 30,
     cycleMs: 3000,
     keyframes: [
-      pose({
-        root: [0, 19, 0],
-        spine: [-1, 0.5, 0],
-        neck: [-1, 0.25, 0],
-        head: [-1, 0.05, 0],
-        shoulderLine: [0, 0, 1],
-        hipLine: [0, 0, 1],
-        thighL: [1, -0.45, 0.35], shinL: [0.18, 1, 0.05],
-        thighR: [1, -0.45, -0.35], shinR: [0.18, 1, -0.05],
-        upperArmL: [-0.5, 0.35, 1], foreArmL: [-0.75, 0.3, 0.75],
-        upperArmR: [-0.5, 0.35, -1], foreArmR: [-0.75, 0.3, -0.75],
-        footL: [1, 0.1, 0], footR: [1, 0.1, 0],
-      }),
-      pose({
-        root: [0, 19, 0],
-        spine: [-1, 0.5, 0],
-        neck: [-1, 0.25, 0],
-        head: [-1, 0.05, 0],
-        shoulderLine: [0, 0, 1],
-        hipLine: [0, 0, 1],
-        thighL: [1, -0.45, 0.35], shinL: [0.18, 1, 0.05],
-        thighR: [0.35, -1, -0.4], shinR: [0.6, 1, -0.15],
-        upperArmL: [-0.5, 0.35, 1], foreArmL: [-0.75, 0.3, 0.75],
-        upperArmR: [-0.5, 0.35, -1], foreArmR: [-0.75, 0.3, -0.75],
-        footL: [1, 0.1, 0], footR: [0.9, 0.3, 0],
-      }),
+      pose(
+        turned(
+          {
+            // Pelvis a spine's worth of lift above shoulders on the floor.
+            root: [0, 19, 0],
+            spine: [-0.8, 0.6, 0],
+            neck: [-1, 0, 0],
+            head: [-0.9, -0.3, 0],
+            shoulderLine: [0, 0, 1],
+            hipLine: [0, 0, 1],
+            // Folded over the chest, not flat on the floor: floor-level arms
+            // run parallel to the torso and the thighs from every raised
+            // camera, and the pose turned into four overlapping diagonals.
+            upperArmL: [0.2, -0.85, 0.45], foreArmL: [-0.15, 0.4, -0.9],
+            upperArmR: [0.2, -0.85, -0.45], foreArmR: [-0.15, 0.4, 0.9],
+            thighL: [0.99, -0.16, 0.06], shinL: [0.26, 0.967, 0.02],
+            thighR: [0.99, -0.16, -0.06], shinR: [0.26, 0.967, -0.02],
+            footL: [1, 0.06, 0], footR: [1, 0.06, 0],
+          },
+          BRIDGE_TURN,
+        ),
+      ),
+      pose(
+        turned(
+          {
+            root: [0, 19, 0],
+            spine: [-0.8, 0.6, 0],
+            neck: [-1, 0, 0],
+            head: [-0.9, -0.3, 0],
+            shoulderLine: [0, 0, 1],
+            hipLine: [0, 0, 1],
+            upperArmL: [0.62, 0, 0.86], foreArmL: [0.73, 0, 0.7],
+            upperArmR: [1.02, 0, -0.29], foreArmR: [0.91, 0, -0.45],
+            thighL: [0.99, -0.16, 0.06], shinL: [0.26, 0.967, 0.02],
+            // Knee driven up over the hip, shin hanging loose under it.
+            thighR: [0.22, -1, -0.1], shinR: [0.72, 0.69, 0],
+            footL: [1, 0.06, 0], footR: [0.5, 0.5, 0],
+          },
+          BRIDGE_TURN,
+        ),
+      ),
     ],
   },
 
   // Seated with both knees at ninety degrees, rotating through to swap.
   'ninety-ninety-switches': {
-    bestAzimuth: 18,
-    bestElevation: 34,
+    bestAzimuth: 35,
+    bestElevation: 40,
     cycleMs: 3800,
     keyframes: [
-      pose({
-        root: [0, 28, 0],
-        spine: [0, -1, 0.05],
-        thighL: [0.4, 0.05, 1], shinL: [1, 0.05, -0.25],
-        thighR: [-1, 0.05, 0.25], shinR: [-0.2, 0.05, -1],
-        upperArmL: [0.5, 0.9, 0.15], foreArmL: [0.25, 1, 0],
-        upperArmR: [-0.5, 0.9, 0.15], foreArmR: [-0.25, 1, 0],
-      }),
-      pose({
-        root: [0, 28, 0],
-        spine: [0, -1, 0.05],
-        thighL: [1, 0.05, 0.25], shinL: [0.2, 0.05, -1],
-        thighR: [-0.4, 0.05, 1], shinR: [-1, 0.05, -0.25],
-        upperArmL: [0.5, 0.9, 0.15], foreArmL: [0.25, 1, 0],
-        upperArmR: [-0.5, 0.9, 0.15], foreArmR: [-0.25, 1, 0],
-      }),
+      pose(
+        turned(
+          {
+            root: [0, 31, 0],
+            spine: [0, -1, 0.08],
+            // Front leg: thigh out to the front corner, shin across the body.
+            thighL: [0.6, 0, 0.8], shinL: [-0.95, 0, -0.3],
+            footL: [-0.9, 0, 0.4],
+            // Back leg: thigh out to the side, shin folded back behind it.
+            thighR: [-0.95, 0, -0.3], shinR: [0.3, 0, -0.95],
+            footR: [0.2, 0, -0.98],
+            // Hands down to the floor beside the hips. Kept out of the depth
+            // axis so the arms do not cross the legs into an unreadable knot.
+            upperArmL: [0.55, 0.83, 0.1], foreArmL: [0.45, 0.89, 0.1],
+            upperArmR: [-0.55, 0.83, 0.1], foreArmR: [-0.45, 0.89, 0.1],
+          },
+          NINETY_TURN,
+        ),
+      ),
+      pose(
+        turned(
+          {
+            root: [0, 31, 0],
+            spine: [0, -1, 0.08],
+            thighL: [0.95, 0, -0.3], shinL: [-0.3, 0, -0.95],
+            footL: [-0.2, 0, -0.98],
+            thighR: [-0.6, 0, 0.8], shinR: [0.95, 0, -0.3],
+            footR: [0.9, 0, 0.4],
+            upperArmL: [0.45, 0.9, 0.2], foreArmL: [0.35, 0.9, 0.25],
+            upperArmR: [-0.45, 0.9, 0.2], foreArmR: [-0.35, 0.9, 0.25],
+          },
+          NINETY_TURN,
+        ),
+      ),
     ],
   },
 
@@ -228,6 +319,10 @@ const ANIMATIONS: Record<string, ExerciseAnimation> = {
     ],
   },
 };
+
+const ANIMATIONS: Record<string, ExerciseAnimation> = Object.fromEntries(
+  Object.entries(RAW).map(([id, anim]) => [id, { ...anim, keyframes: grounded(anim.keyframes) }]),
+);
 
 /** Degrees for each named view. 'auto' defers to the exercise. */
 export const VIEW_AZIMUTH = {
