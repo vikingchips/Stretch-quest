@@ -3,6 +3,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useProgressStore } from '../store/progressStore';
 import { Icon } from '../components/Icon';
 import { AccountSection } from '../components/AccountSection';
+import { syncConfigured } from '../sync/client';
 
 const REST_OPTIONS = [5, 10, 15, 20];
 const PREP_OPTIONS = [3, 5, 10];
@@ -127,8 +128,14 @@ export function SettingsPage() {
         </p>
       </section>
 
+      {/* The build, not a version number. "v1.0" never changed, so it could
+          not answer the one thing anyone reads it for: whether the service
+          worker has picked up the new bundle yet. */}
       <p className="mt-16 text-center text-xs lowercase text-ink-soft">
-        stretchquest v1.0 · data lives only on this device
+        stretchquest · build {__BUILD_ID__}
+      </p>
+      <p className="mt-1 text-center text-xs lowercase text-ink-soft">
+        {syncConfigured ? 'history syncs to your account' : 'data lives only on this device'}
       </p>
     </main>
   );

@@ -1,8 +1,25 @@
 /// <reference types="vitest/config" />
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+/**
+ * The commit this bundle was built from, shown in Settings.
+ *
+ * A hardcoded version string cannot answer the only question anyone actually
+ * asks it — "is this the new build, or is the service worker still serving
+ * me the old one?" — so it is read from the build instead.
+ */
+function buildId(): string {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7);
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'dev';
+  }
+}
 
 // The site is served from https://<user>.github.io/<repo>/, so the base path
 // must match the repo name. CI derives it from the repo and passes it in here;
@@ -11,6 +28,9 @@ const base = process.env.BASE_PATH || '/';
 
 export default defineConfig({
   base,
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId()),
+  },
   plugins: [
     react(),
     tailwindcss(),
