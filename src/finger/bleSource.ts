@@ -21,8 +21,11 @@ export function bleSupported(): boolean {
   return typeof navigator !== 'undefined' && 'bluetooth' in navigator;
 }
 
+// No iPhone route any more: the official Tindeq app rejects a device that is
+// not in their database of sold hardware, so pointing people there would be
+// sending them somewhere that turns them away.
 export const BLE_UNSUPPORTED_MESSAGE =
-  'web bluetooth is not available in this browser. on iphone, use the tindeq app with the same device — or try the simulated device here.';
+  'web bluetooth is not available in this browser. it needs chrome on android or desktop — no iphone browser supports it. the simulated device below works anywhere.';
 
 export class BleForceSource extends SourceBase implements ForceSource {
   readonly kind = 'ble' as const;

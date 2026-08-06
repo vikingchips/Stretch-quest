@@ -202,8 +202,15 @@ product feature, not a test double: pick "use a simulated device" and a slider
 drives the pull.
 
 **Web Bluetooth only works in Chrome** on Android and desktop. No iOS browser
-implements it and none is going to, so an iPhone owner uses the official
-Tindeq app with the same device. There is deliberately no workaround.
+implements it and none is going to, so there is deliberately no workaround
+here.
+
+The original plan was to send iPhone owners to the official Tindeq app with
+the same device. **That does not work**: their app finds a DIY device, then
+rejects it as not being in their database of sold hardware. Getting past that
+would mean claiming a real unit's identity, which is not something an openly
+published protocol invites. So the device is Android and desktop Chrome only,
+and the simulated source is what everyone else gets.
 
 ### The protocol it implements
 

@@ -83,8 +83,21 @@ Battery voltage is a **stubbed 3700 mV** until the A1 divider is fitted
    Write down the resting noise level; later thresholds are judged by it.
 3. **Calibration** — implemented (`t` + `c<kg>`, persisted per mode).
    Verify linearity with a third weight that was not used to fit.
-4. **Progressor API** — implemented, to be verified against the official
-   Tindeq app and StretchQuest. **The phase 1 finish line.**
+4. **Progressor API** — implemented and working with StretchQuest.
+   **The phase 1 finish line.**
+
+   **The official Tindeq app will not accept this device.** It finds it and
+   connects, then rejects it as not being in their database — the app checks
+   the device against Tindeq's own records of sold hardware. Nothing to fix
+   on this side: passing that check would mean claiming a real unit's
+   identity, and the protocol being openly published is not an invitation to
+   do that.
+
+   Two things follow. The brief's plan of handing an iPhone owner the
+   official app does not work, so this device is Android and desktop Chrome
+   only for now. And the official app is no longer available as an
+   independent check of the wire format — which is what the serial `x`
+   fixture and the app-side parser test exist for.
 5. **OLED polish** — auto-off after ~10 s idle (the panel draws ~20 mA lit).
    Not started.
 6. **Power** — deep sleep, real battery reading into the API's battery
