@@ -176,17 +176,39 @@ void progressorBegin() {
   control->setCallbacks(new ControlCallbacks());
   // No service->start(): a 2.x no-op — services start with the server.
 
-  // A 128-bit service UUID and the name do not fit in one 31-byte
-  // advertisement, so the name rides in the scan response. Both the official
-  // app and Web Bluetooth match on the "Progressor" prefix.
+  // The 31-byte advertisement cannot hold both a 128-bit service UUID
+  // (16 bytes) and the name, so the split is made explicitly rather than
+  // left to the library to decide.
+  //
+  // The name goes in the primary advertisement: it is what the official
+  // Tindeq app and Web Bluetooth match on, and a scanner sees it even
+  // without requesting a scan response. The service UUID goes in the scan
+  // response, where Chrome still reads it for a services filter. Letting
+  // the library pick put the name in the scan response, and a device whose
+  // name never arrives shows up as an unnamed row that no name filter can
+  // ever match.
+  NimBLEAdvertisementData advData;
+  advData.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+  advData.setName(DEVICE_NAME);
+
+  NimBLEAdvertisementData scanData;
+  scanData.addServiceUUID(NimBLEUUID(SERVICE_UUID));
+
   NimBLEAdvertising *adv = NimBLEDevice::getAdvertising();
-  adv->addServiceUUID(SERVICE_UUID);
-  adv->setName(DEVICE_NAME);
+  adv->setAdvertisementData(advData);
+  adv->setScanResponseData(scanData);
   adv->enableScanResponse(true);
-  adv->start();
+  if (!adv->start()) {
+    Serial.println("ble: ADVERTISING FAILED TO START");
+    return;
+  }
 
   state = PROGRESSOR_ADVERTISING;
-  Serial.println("ble: advertising as " DEVICE_NAME);
+  // The address is printed so it can be matched against a scanner's list:
+  // an unnamed row at the right address is a name problem, no row at all is
+  // an advertising problem, and the two need different fixes.
+  Serial.printf("ble: advertising as %s, address %s\n",
+                DEVICE_NAME, NimBLEDevice::getAddress().toString().c_str());
 }
 
 void progressorOnSample(float kg) {
