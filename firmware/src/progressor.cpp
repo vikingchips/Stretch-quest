@@ -39,6 +39,7 @@ static const uint32_t BATTERY_STUB_MV = 3700;
 // ── State ────────────────────────────────────────────────────────────────
 static NimBLECharacteristic *dataChar = nullptr;
 static volatile bool streaming     = false;
+static volatile bool subscribed    = false;
 static volatile bool tareRequested = false;
 static volatile ProgressorState state = PROGRESSOR_ADVERTISING;
 static uint32_t streamStartUs = 0;
@@ -131,6 +132,15 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
   }
 };
 
+class DataCallbacks : public NimBLECharacteristicCallbacks {
+  // NimBLE 2.x removed getSubscribedCount(), so the subscription is tracked
+  // here instead: subValue 0 = unsubscribed, 1 = notifications, 2 = indications.
+  void onSubscribe(NimBLECharacteristic *, NimBLEConnInfo &, uint16_t subValue) override {
+    subscribed = (subValue != 0);
+    Serial.printf("ble: data point %s\n", subscribed ? "subscribed" : "unsubscribed");
+  }
+};
+
 class ServerCallbacks : public NimBLEServerCallbacks {
   void onConnect(NimBLEServer *, NimBLEConnInfo &) override {
     state = PROGRESSOR_CONNECTED;
@@ -139,8 +149,11 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 
   void onDisconnect(NimBLEServer *, NimBLEConnInfo &, int reason) override {
     // A vanished central must not leave the stream running: the next
-    // connection expects a device at rest, and so does the battery.
+    // connection expects a device at rest, and so does the battery. The
+    // stack does not promise an unsubscribe event on disconnect, so the
+    // flag is cleared here too.
     streaming = false;
+    subscribed = false;
     state = PROGRESSOR_ADVERTISING;
     Serial.printf("ble: disconnected (%d), advertising again\n", reason);
     NimBLEDevice::startAdvertising();
@@ -157,10 +170,11 @@ void progressorBegin() {
   NimBLEService *service = server->createService(SERVICE_UUID);
   dataChar = service->createCharacteristic(
       DATA_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  dataChar->setCallbacks(new DataCallbacks());
   NimBLECharacteristic *control = service->createCharacteristic(
       CONTROL_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
   control->setCallbacks(new ControlCallbacks());
-  service->start();
+  // No service->start(): a 2.x no-op — services start with the server.
 
   // A 128-bit service UUID and the name do not fit in one 31-byte
   // advertisement, so the name rides in the scan response. Both the official
@@ -176,8 +190,7 @@ void progressorBegin() {
 }
 
 void progressorOnSample(float kg) {
-  if (!streaming || !dataChar) return;
-  if (dataChar->getSubscribedCount() == 0) return;
+  if (!streaming || !subscribed || !dataChar) return;
 
   uint8_t pkt[10];
   // Unsigned subtraction survives micros() wrapping at ~71 minutes.
