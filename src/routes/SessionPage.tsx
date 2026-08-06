@@ -22,6 +22,9 @@ import { hasAnimation, VIEW_AZIMUTH } from '../anim/poses';
 import { Icon } from '../components/Icon';
 import { formatClock } from '../lib/format';
 
+/** Stable identity, so the selector does not produce a new object per render. */
+const EMPTY_LEVELS: Record<string, number> = {};
+
 const KIND_STYLE: Record<string, { label: string; color: string }> = {
   prep: { label: 'get ready', color: 'var(--color-fjord-deep)' },
   stretch: { label: 'work', color: 'var(--color-pine-deep)' },
@@ -37,6 +40,8 @@ const MODALITY_LABEL: Record<Modality, string> = {
   eccentric: 'lower slowly',
   activation: 'activate',
   potentiation: 'prime',
+  isometric: 'hold hard',
+  'pails-rails': 'push, then pull',
 };
 
 export function SessionPage() {
@@ -45,6 +50,8 @@ export function SessionPage() {
   const getRoutine = useRoutinesStore((s) => s.getRoutine);
   const settings = useSettingsStore();
   const completeSession = useProgressStore((s) => s.completeSession);
+  const exerciseLevels = useProgressStore((s) => s.progress.exerciseLevels ?? EMPTY_LEVELS);
+  const setExerciseLevel = useProgressStore((s) => s.setExerciseLevel);
 
   const routine = routineId ? getRoutine(routineId) : undefined;
   const segments = useMemo(
@@ -190,6 +197,32 @@ export function SessionPage() {
             <p className="measure mt-3 text-sm leading-relaxed text-ink-soft">
               {exercise.instructions}
             </p>
+
+            {exercise.levels && (
+              /* For these the level is the training variable, not a
+                 preference — the wrong lever is either pointless or an
+                 injury, so it is picked here rather than buried in settings. */
+              <div className="mt-6 w-full max-w-sm">
+                <div className="flex gap-2">
+                  {exercise.levels.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setExerciseLevel(exercise.id, i + 1)}
+                      className={`flex-1 border py-2 text-xs lowercase ${
+                        (exerciseLevels[exercise.id] ?? 1) === i + 1
+                          ? 'border-pine text-pine-deep'
+                          : 'border-line-soft text-ink-soft hover:text-ink'
+                      }`}
+                    >
+                      level {i + 1}
+                    </button>
+                  ))}
+                </div>
+                <p className="measure mt-3 text-xs leading-relaxed text-ink-soft">
+                  {exercise.levels[(exerciseLevels[exercise.id] ?? 1) - 1]}
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <div className="mt-10 flex h-48 flex-col items-center justify-center">

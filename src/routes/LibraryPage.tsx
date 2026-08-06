@@ -44,7 +44,14 @@ export function LibraryPage() {
     {
       key: 'daily',
       title: 'every day',
+      note: 'Six minutes, never hard. It holds the streak and keeps the joints honest.',
       routines: BUILTIN_ROUTINES.filter((r) => r.category === 'hybrid'),
+    },
+    {
+      key: 'heavy',
+      title: 'the heavy sessions',
+      note: 'Where range is actually built: end-range strength under load. Two or three a week, and never the day before something hard.',
+      routines: BUILTIN_ROUTINES.filter((r) => r.category === 'heavy'),
     },
     {
       key: 'pre-activity',
@@ -55,8 +62,10 @@ export function LibraryPage() {
     {
       key: 'recovery',
       title: 'rest days, or hours after training',
-      note: 'Long holds and loaded work — where range is actually built. It costs force for a few hours afterwards, which is the whole reason it is kept away from a session rather than put before one.',
-      routines: BUILTIN_ROUTINES.filter((r) => r.timing === 'away-from-performance'),
+      note: 'Long holds and slower work. It costs force for a few hours afterwards, which is the whole reason it is kept away from a session rather than put before one.',
+      routines: BUILTIN_ROUTINES.filter(
+        (r) => r.timing === 'away-from-performance' && r.category !== 'heavy',
+      ),
     },
     {
       key: 'custom',

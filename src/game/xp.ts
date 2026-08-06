@@ -10,10 +10,27 @@ export const STREAK_MILESTONE_BONUS: Record<number, number> = {
   100: 100,
 };
 
+/**
+ * How much the work itself is worth, per routine.
+ *
+ * Without this a six-minute primer and a twenty-minute loaded session pay
+ * almost the same, because the fixed bonuses dominate both — which rewards
+ * showing up rather than training. Only the effort-dependent part is scaled:
+ * the daily-goal and streak-milestone bonuses are about the habit and are the
+ * same whichever routine got you there.
+ */
+export const EFFORT_WEIGHT: Record<string, number> = {
+  primer: 0.4,
+  standard: 1,
+  heavy: 1.4,
+};
+
 export interface XpInput {
   activeSec: number;
   stepsCompleted: number;
   stepsTotal: number;
+  /** Routine.effort. Anything unrecognised counts as 'standard'. */
+  effort?: string;
   /** True when this session pushed today's total over the daily goal for the first time. */
   /** True when this is the first session of the day. */
   firstSessionOfDay: boolean;
@@ -29,10 +46,13 @@ export function computeXp(input: XpInput): XpBreakdown {
   if (!sessionQualifies(input.activeSec)) {
     return { base: 0, activeTime: 0, noSkipBonus: 0, goalBonus: 0, streakMilestoneBonus: 0, total: 0 };
   }
-  const base = 10;
-  const activeTime = Math.floor(input.activeSec / 30);
+  const weight = EFFORT_WEIGHT[input.effort ?? 'standard'] ?? 1;
+  const base = Math.round(10 * weight);
+  const activeTime = Math.round(Math.floor(input.activeSec / 30) * weight);
   const noSkipBonus =
-    input.stepsTotal > 0 && input.stepsCompleted === input.stepsTotal ? 10 : 0;
+    input.stepsTotal > 0 && input.stepsCompleted === input.stepsTotal
+      ? Math.round(10 * weight)
+      : 0;
   const goalBonus = input.firstSessionOfDay ? 15 : 0;
   // Milestones pay only on the session that raises the streak to that exact value.
   const streakMilestoneBonus =

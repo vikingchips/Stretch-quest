@@ -10,6 +10,8 @@ export const CATEGORY_META: Record<Routine['category'], { label: string; color: 
   climbing: { label: 'climbing', color: 'var(--color-bark)' },
   running: { label: 'running', color: 'var(--color-fjord)' },
   recovery: { label: 'rest day', color: 'var(--color-clay)' },
+  // The badge beside the name already says "heavy"; this line says what kind.
+  heavy: { label: 'end-range', color: 'var(--color-clay)' },
   custom: { label: 'my routine', color: 'var(--color-stone)' },
   fingers: { label: 'fingers', color: 'var(--color-bark)' },
   // Legacy: only reachable through old session records.
@@ -30,7 +32,16 @@ export function RoutineCard({ routine }: { routine: Routine }) {
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1">
-        <h3 className="truncate text-base lowercase">{routine.name}</h3>
+        <h3 className="flex items-center gap-2 truncate text-base lowercase">
+          {routine.name}
+          {routine.effort === 'heavy' && (
+            /* Marked, because starting one of these by accident on the day
+               before a project costs you the project. */
+            <span className="shrink-0 border border-clay px-1.5 py-0.5 text-[10px] lowercase tracking-wide text-clay">
+              heavy
+            </span>
+          )}
+        </h3>
         <p className="mt-0.5 text-xs lowercase text-ink-soft">
           {meta.label} · {routine.steps.length} exercises · {formatMinutes(work)} work
         </p>

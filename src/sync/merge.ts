@@ -59,6 +59,9 @@ export function mergeProgress(local: UserProgress, remote: UserProgress): UserPr
     deletedSessionIds: [
       ...new Set([...(local.deletedSessionIds ?? []), ...(remote.deletedSessionIds ?? [])]),
     ],
+    // Local wins per exercise: a level is a decision you just made about what
+    // you can handle today, and maxing it would silently promote you.
+    exerciseLevels: { ...(remote.exerciseLevels ?? {}), ...(local.exerciseLevels ?? {}) },
   };
 }
 

@@ -123,3 +123,51 @@ describe('rep-based work', () => {
     expect(t[1].reps).toBe(5);
   });
 });
+
+describe('per-step rest', () => {
+  const heavyStep = {
+    id: 'r',
+    name: 'r',
+    description: '',
+    category: 'heavy' as const,
+    isCustom: false,
+  };
+
+  it('uses the step rest instead of the global one', () => {
+    // A minute between loaded sets is the difference between training and a
+    // circuit, and it cannot come from a global setting meant for stretches.
+    const segments = buildTimeline(
+      {
+        ...heavyStep,
+        steps: [{ exerciseId: 'deep-squat-pry', durationSec: 60, sets: 2, restSec: 90 }],
+      },
+      { prepDurationSec: 5, restDurationSec: 10 },
+    );
+    const rests = segments.filter((s) => s.kind === 'rest');
+    expect(rests).toHaveLength(1);
+    expect(rests[0].durationSec).toBe(90);
+  });
+
+  it('falls back to the global rest when the step says nothing', () => {
+    const segments = buildTimeline(
+      { ...heavyStep, steps: [{ exerciseId: 'deep-squat-pry', durationSec: 60, sets: 2 }] },
+      { prepDurationSec: 5, restDurationSec: 10 },
+    );
+    expect(segments.find((s) => s.kind === 'rest')!.durationSec).toBe(10);
+  });
+
+  it('rests between sets and between exercises, but never at the end', () => {
+    const segments = buildTimeline(
+      {
+        ...heavyStep,
+        steps: [
+          { exerciseId: 'deep-squat-pry', durationSec: 60, sets: 2, restSec: 60 },
+          { exerciseId: 'frog-pose', durationSec: 60, restSec: 30 },
+        ],
+      },
+      { prepDurationSec: 5, restDurationSec: 10 },
+    );
+    expect(segments.filter((s) => s.kind === 'rest').map((s) => s.durationSec)).toEqual([60, 60]);
+    expect(segments[segments.length - 1].kind).toBe('stretch');
+  });
+});

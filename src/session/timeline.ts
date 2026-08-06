@@ -71,12 +71,14 @@ export function buildTimeline(
         segments.push(work);
       }
 
-      // Rest between sets of the same exercise, and between exercises.
+      // Rest between sets of the same exercise, and between exercises. A step
+      // can ask for its own: a minute between loaded sets is the difference
+      // between training and a circuit.
       const lastSetOfLastStep = set === setTotal - 1 && stepIndex === routine.steps.length - 1;
       if (!lastSetOfLastStep) {
         segments.push({
           kind: 'rest',
-          durationSec: settings.restDurationSec,
+          durationSec: step.restSec ?? settings.restDurationSec,
           stepIndex: set === setTotal - 1 ? stepIndex + 1 : stepIndex,
         });
       }

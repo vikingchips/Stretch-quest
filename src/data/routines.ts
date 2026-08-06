@@ -1,76 +1,88 @@
 import type { Routine } from '../types';
 
 /**
- * The built-in routines follow a mobility protocol built around one split:
- * dynamic work goes before activity, and range-building loaded/static work is
- * kept away from performance. That split is why the recovery routine exists at
- * all — it lets a daily habit survive without long static holds landing right
- * before a climb.
+ * Two splits run through this set.
+ *
+ * The first is timing: dynamic work goes before activity, range-building
+ * loaded work is kept away from it. Long holds and heavy end-range work cost
+ * force for hours afterwards, so putting them before a climb trades the
+ * session for the stretch.
+ *
+ * The second is dose. A daily primer and a training session are different
+ * things and were previously the same thing — one routine that was too long
+ * to do every day and too light to change anything. Now the primer is six
+ * minutes and never hard, and the heavy sessions are unmistakably training.
+ * `effort` carries that distinction into XP so the reward follows stimulus
+ * rather than attendance.
+ *
+ * The old climbing primers (Hip Nebula and its long version) are gone: the
+ * primer above is explicitly the pre-climbing warm-up now, and the Hip Nebula
+ * name belongs to the frogging session it always described better.
  */
 export const BUILTIN_ROUTINES: Routine[] = [
-  // ── Daily baseline ─────────────────────────────────────────────────────
+  // ── The daily primer ───────────────────────────────────────────────────
   {
     id: 'daily-warp',
     name: 'Daily Warp',
     description:
-      'The lowest common denominator for hips, glutes and ankles. Ten minutes that cover both sports and keep the habit alive on days you do nothing else.',
+      'The short daily primer. Keeps the streak, joint health and movement quality — never exhausting. The heavy lifting happens elsewhere.',
     category: 'hybrid',
     timing: 'anytime',
-    guidance: 'Morning, or before any activity. This is the one to default to.',
+    effort: 'primer',
+    guidance:
+      'Morning, or as a warm-up before climbing or cycling. This is the one to default to.',
     isCustom: false,
     steps: [
-      { exerciseId: 'leg-swings-sagittal', durationSec: 45 },
-      { exerciseId: 'leg-swings-lateral', durationSec: 45 },
-      { exerciseId: 'worlds-greatest-stretch', durationSec: 45 },
-      { exerciseId: 'cossack-squat', durationSec: 45 },
-      { exerciseId: 'deep-squat-pry', durationSec: 60 },
+      { exerciseId: 'hip-cars', durationSec: 30 },
+      { exerciseId: 'ninety-ninety-liftoff', durationSec: 60 },
+      { exerciseId: 'cossack-squat', durationSec: 30 },
+      { exerciseId: 'frog-rock-liftoff', durationSec: 60 },
+      { exerciseId: 'wall-ankle-rocker', durationSec: 30 },
       { exerciseId: 'glute-bridge-march', durationSec: 60 },
-      { exerciseId: 'ninety-ninety-switches', durationSec: 90 },
-      { exerciseId: 'wall-ankle-rocker', durationSec: 45 },
     ],
   },
 
-  // ── Before climbing ────────────────────────────────────────────────────
+  // ── End-range strength ─────────────────────────────────────────────────
+  // These are the sessions that actually build range. They cost force for a
+  // day afterwards, which is why the caution is not decorative.
   {
     id: 'hip-nebula',
     name: 'Hip Nebula',
     description:
-      'Opens the hip galaxy for high steps and drop knees. All dynamic, so it costs you nothing on the wall.',
-    category: 'climbing',
-    timing: 'pre-activity',
-    guidance: 'Straight before climbing.',
+      'The heavy session that actually builds usable range. Loaded end-range strength for frogging: abduction, external rotation and adductor length. Expect effort and next-day soreness.',
+    category: 'heavy',
+    timing: 'away-from-performance',
+    effort: 'heavy',
+    guidance: 'Two or three times a week, on rest or easy days.',
+    caution: 'Never within 24 hours before hard climbing.',
     isCustom: false,
     steps: [
-      { exerciseId: 'leg-swings-sagittal', durationSec: 45 },
-      { exerciseId: 'leg-swings-lateral', durationSec: 45 },
-      { exerciseId: 'ninety-ninety-switches', durationSec: 90 },
-      { exerciseId: 'deep-squat-pry', durationSec: 60 },
-      { exerciseId: 'cossack-squat', durationSec: 45 },
-      { exerciseId: 'frog-rocks', durationSec: 60 },
-      { exerciseId: 'worlds-greatest-stretch', durationSec: 45 },
-      { exerciseId: 'wall-ankle-rocker', durationSec: 45 },
+      { exerciseId: 'loaded-frog-pails-rails', durationSec: 130, restSec: 60 },
+      { exerciseId: 'cossack-eccentric', durationSec: 45, sets: 4, reps: 8, restSec: 60 },
+      { exerciseId: 'copenhagen-adduction', durationSec: 30, sets: 3, reps: 6, restSec: 60 },
+      { exerciseId: 'straddle-liftoff', durationSec: 40, sets: 3, reps: 6, restSec: 60 },
+      { exerciseId: 'banded-hip-distraction', durationSec: 60 },
+      { exerciseId: 'frog-end-range-hold', durationSec: 45, sets: 2, restSec: 60 },
     ],
   },
   {
-    id: 'hip-nebula-long',
-    name: 'Hip Nebula, Long',
+    id: 'lower-orbit',
+    name: 'Lower Orbit',
     description:
-      'The twenty-minute version: the same sequence at a slower tempo, with loaded Cossacks and a second, deeper round.',
-    category: 'climbing',
-    timing: 'pre-activity',
-    guidance: 'Before a longer session, or on days the first few moves feel tight.',
+      'The broader heavy session: hip flexion for high steps, hip extension for heel hooks, and dorsiflexion. Rotate with Hip Nebula so every position gets loaded.',
+    category: 'heavy',
+    timing: 'away-from-performance',
+    effort: 'heavy',
+    guidance: 'Once a week, on a rest day. Rotate it with Hip Nebula.',
+    caution: 'Same rule: not within 24 hours before hard climbing.',
     isCustom: false,
     steps: [
-      { exerciseId: 'leg-swings-sagittal', durationSec: 45 },
-      { exerciseId: 'leg-swings-lateral', durationSec: 45 },
-      { exerciseId: 'ninety-ninety-switches', durationSec: 90 },
-      { exerciseId: 'deep-squat-pry', durationSec: 60 },
-      { exerciseId: 'cossack-squat', durationSec: 60, sets: 2 },
-      { exerciseId: 'frog-rocks', durationSec: 90 },
-      { exerciseId: 'worlds-greatest-stretch', durationSec: 60 },
-      { exerciseId: 'seated-ninety-ninety-lift', durationSec: 45 },
-      { exerciseId: 'lizard-lunge', durationSec: 45 },
-      { exerciseId: 'wall-ankle-rocker', durationSec: 60 },
+      { exerciseId: 'high-step-liftoff', durationSec: 35, sets: 3, reps: 5, restSec: 45 },
+      { exerciseId: 'couch-stretch', durationSec: 40, sets: 3, restSec: 45 },
+      { exerciseId: 'hamstring-bridge-curl', durationSec: 45, sets: 3, reps: 6, restSec: 60 },
+      { exerciseId: 'banded-external-rotation', durationSec: 40, sets: 3, reps: 10, restSec: 45 },
+      { exerciseId: 'ankle-rocker-weighted', durationSec: 40, sets: 3, reps: 8, restSec: 45 },
+      { exerciseId: 'deep-squat-pry', durationSec: 60, sets: 2, restSec: 60 },
     ],
   },
 
@@ -126,7 +138,7 @@ export const BUILTIN_ROUTINES: Routine[] = [
     id: 'deep-dive',
     name: 'Deep Dive',
     description:
-      'Where range actually gets built. Loaded eccentrics for the tissues that tear, long holds for the positions that block you, and the ankle work that dynamic drills never do.',
+      'The slower recovery session: eccentrics for the tissues that tear, long holds for the positions that block you, and the calf and ankle work the heavy sessions skip.',
     category: 'recovery',
     timing: 'away-from-performance',
     guidance:
@@ -136,7 +148,7 @@ export const BUILTIN_ROUTINES: Routine[] = [
     isCustom: false,
     steps: [
       { exerciseId: 'nordic-hamstring', durationSec: 40, sets: 2, reps: 5 },
-      { exerciseId: 'copenhagen-adduction', durationSec: 25, sets: 2 },
+      { exerciseId: 'copenhagen-adduction', durationSec: 30, sets: 2, reps: 6 },
       { exerciseId: 'frog-pose', durationSec: 90 },
       { exerciseId: 'couch-stretch', durationSec: 60 },
       { exerciseId: 'seated-ninety-ninety-lift', durationSec: 45 },

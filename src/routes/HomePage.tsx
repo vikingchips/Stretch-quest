@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useProgressStore } from '../store/progressStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useFingerStore } from '../store/fingerStore';
-import { BUILTIN_ROUTINE_BY_ID } from '../data/routines';
+import { BUILTIN_ROUTINES, BUILTIN_ROUTINE_BY_ID } from '../data/routines';
 import { goalMetOnDay, weekMarks } from '../game/dailyGoal';
 import { addDays, todayKey } from '../game/dates';
 import { maxByHand } from '../finger/maxTest';
@@ -15,6 +15,8 @@ import { Icon } from '../components/Icon';
 
 const DAILY_ROUTINE_ID = 'daily-warp';
 const ABRAHANGS_PER_DAY = 2;
+/** Heavy sessions per week, counted across both of them together. */
+const HEAVY_PER_WEEK = { lo: 2, hi: 3 } as const;
 
 export function HomePage() {
   const progress = useProgressStore((s) => s.progress);
@@ -40,6 +42,26 @@ export function HomePage() {
       label: daily.name,
       note: done ? 'done today' : 'the daily baseline',
       done,
+    });
+  }
+
+  // The heavy sessions are a weekly question, not a daily one, so they show
+  // how the week is going rather than a tick for today.
+  const weekStart = addDays(today, -6);
+  const heavyThisWeek = sessions.filter(
+    (s) => s.category === 'heavy' && s.dateKey >= weekStart,
+  ).length;
+  for (const routine of BUILTIN_ROUTINES.filter((r) => r.category === 'heavy')) {
+    const doneToday = sessions.some(
+      (s) => s.dateKey === today && s.routineId === routine.id,
+    );
+    items.push({
+      key: routine.id,
+      to: `/routines/${routine.id}`,
+      label: routine.name.toLowerCase(),
+      note: `${heavyThisWeek} of ${HEAVY_PER_WEEK.lo}–${HEAVY_PER_WEEK.hi} heavy this week`,
+      done: heavyThisWeek >= HEAVY_PER_WEEK.lo,
+      blocked: doneToday ? 'done today' : undefined,
     });
   }
 

@@ -32,7 +32,14 @@ export type Modality =
   | 'loaded'
   | 'eccentric'
   | 'activation'
-  | 'potentiation';
+  | 'potentiation'
+  /** Held at end range with intent, rather than relaxed into. */
+  | 'isometric'
+  /**
+   * Progressive angular isometrics: push *into* the end range, then pull
+   * *through* it. The pair is what turns passive range into range you own.
+   */
+  | 'pails-rails';
 
 /**
  * Timed work counts seconds; rep work is self-paced — the timer waits for you
@@ -57,6 +64,13 @@ export interface Exercise {
   /** Why this is in the routine — the one-line rationale from the protocol. */
   purpose?: string;
   tips?: string;
+  /**
+   * Ordered progressions, easiest first. Shown as a picker during the session
+   * and remembered, because for these exercises the level *is* the training
+   * variable — a Copenhagen at the wrong lever is either pointless or an
+   * injury.
+   */
+  levels?: string[];
 }
 
 /**
@@ -67,6 +81,8 @@ export type RoutineCategory =
   | 'climbing'
   | 'running'
   | 'hybrid'
+  /** End-range strength. Real training, not a warm-up — see Routine.effort. */
+  | 'heavy'
   | 'recovery'
   | 'custom'
   | 'fingers'
@@ -86,6 +102,12 @@ export interface RoutineStep {
   sets?: number;
   /** Reps per set; only meaningful for rep-based exercises. */
   reps?: number;
+  /**
+   * Rest after each set of this step, overriding the global setting. Heavy
+   * work needs its own rest: a minute between loaded sets is the difference
+   * between training and a circuit.
+   */
+  restSec?: number;
 }
 
 export interface Routine {
@@ -98,6 +120,12 @@ export interface Routine {
   guidance?: string;
   /** A hard "don't" for this routine, if it has one. */
   caution?: string;
+  /**
+   * What the session costs you. Drives XP, so the number reflects stimulus
+   * rather than attendance: a six-minute primer and a twenty-minute loaded
+   * session should not pay the same.
+   */
+  effort?: 'primer' | 'standard' | 'heavy';
   steps: RoutineStep[];
   isCustom: boolean;
   createdAt?: string;
@@ -140,6 +168,8 @@ export interface UserProgress {
   unlockedBadges: Record<string, string>;
   /** Days on which the daily goal was met. */
   goalMetDateKeys: string[];
+  /** Chosen progression per exercise, for the few that have levels. */
+  exerciseLevels?: Record<string, number>;
   /**
    * Sessions deleted on purpose. Kept as tombstones rather than simply
    * dropped: the merge is additive, so without a record of the deletion a

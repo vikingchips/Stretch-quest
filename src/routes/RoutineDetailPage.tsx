@@ -34,6 +34,7 @@ export function RoutineDetailPage() {
   const total = routineTotalSec(routine, { prepDurationSec, restDurationSec });
   const activeSec = routineActiveSec(routine);
   const estXp = computeXp({
+    effort: routine.effort,
     activeSec,
     stepsCompleted: routine.steps.length,
     stepsTotal: routine.steps.length,

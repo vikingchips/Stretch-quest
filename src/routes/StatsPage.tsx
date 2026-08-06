@@ -18,9 +18,9 @@ export function StatsPage() {
     .reduce((sum, s) => sum + s.activeSec, 0);
   const hasFingers = sessions.some((s) => s.category === 'fingers');
   const categories: RoutineCategory[] = [
-    'climbing',
+    'hybrid',
+    'heavy',
     'running',
-    'full-body',
     'custom',
     ...(hasFingers ? (['fingers'] as const) : []),
   ];

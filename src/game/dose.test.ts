@@ -7,14 +7,14 @@ const TODAY = '2026-03-15';
 function session(overrides: Partial<SessionRecord> = {}): SessionRecord {
   return {
     id: 's1',
-    routineId: 'hip-nebula',
-    routineName: 'Hip Nebula',
-    category: 'climbing',
+    routineId: 'daily-warp',
+    routineName: 'Daily Warp',
+    category: 'hybrid',
     startedAt: `${TODAY}T08:00:00.000Z`,
     dateKey: TODAY,
-    activeSec: 600,
-    stepsCompleted: 8,
-    stepsTotal: 8,
+    activeSec: 360,
+    stepsCompleted: 6,
+    stepsTotal: 6,
     xpEarned: 40,
     ...overrides,
   };
@@ -23,7 +23,8 @@ function session(overrides: Partial<SessionRecord> = {}): SessionRecord {
 describe('weeklyDose', () => {
   it('credits every area an exercise targets', () => {
     const areas = weeklyDose([session()], TODAY).map((d) => d.area);
-    // Hip Nebula is hip-led but also hits ankles via the wall rocker.
+    // The primer is hip-led, but the frog rock also credits adductors and the
+    // wall rocker credits ankles — one session, several areas.
     expect(areas).toContain('hips');
     expect(areas).toContain('adductors');
     expect(areas).toContain('ankles');
@@ -51,7 +52,7 @@ describe('weeklyDose', () => {
 
   it('scales a partly completed session by how much was done', () => {
     const full = weeklyDose([session()], TODAY).find((d) => d.area === 'hips')!.sec;
-    const half = weeklyDose([session({ stepsCompleted: 4 })], TODAY).find(
+    const half = weeklyDose([session({ stepsCompleted: 3 })], TODAY).find(
       (d) => d.area === 'hips',
     )!.sec;
     expect(half).toBe(Math.round(full / 2));

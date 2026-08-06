@@ -60,3 +60,47 @@ describe('computeXp', () => {
     expect(r.total).toBe(XP_SESSION_CAP);
   });
 });
+
+describe('effort weighting', () => {
+  it('leaves an unweighted routine exactly as it was', () => {
+    // Every existing routine has no effort field, and none of their numbers
+    // may move because heavy sessions were added.
+    expect(computeXp({ ...base, effort: undefined })).toEqual(computeXp(base));
+    expect(computeXp({ ...base, effort: 'standard' })).toEqual(computeXp(base));
+  });
+
+  it('pays a primer less than the same minutes of standard work', () => {
+    // The point of the split: a six-minute primer should not pay like
+    // training just because it happened.
+    const primer = computeXp({ ...base, effort: 'primer' });
+    expect(primer.total).toBeLessThan(computeXp(base).total);
+  });
+
+  it('pays a heavy session more', () => {
+    expect(computeXp({ ...base, effort: 'heavy' }).total).toBeGreaterThan(
+      computeXp(base).total,
+    );
+  });
+
+  it('does not scale the bonuses that are about the habit', () => {
+    // Turning up is worth the same whichever routine got you there, and a
+    // streak milestone is not the routine's to inflate.
+    const heavy = computeXp({
+      ...base,
+      effort: 'heavy',
+      firstSessionOfDay: true,
+      streakBefore: 6,
+      streakAfter: 7,
+    });
+    expect(heavy.goalBonus).toBe(15);
+    expect(heavy.streakMilestoneBonus).toBe(25);
+  });
+
+  it('treats an unknown effort as standard rather than zeroing it', () => {
+    expect(computeXp({ ...base, effort: 'nonsense' }).total).toBe(computeXp(base).total);
+  });
+
+  it('still awards nothing for a session under the minimum', () => {
+    expect(computeXp({ ...base, effort: 'heavy', activeSec: 30 }).total).toBe(0);
+  });
+});

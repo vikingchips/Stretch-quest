@@ -56,6 +56,8 @@ interface ProgressState {
   deleteSession: (id: string) => void;
   /** Direct unlock for non-session achievements (e.g. saving a custom routine). */
   unlockBadge: (id: string) => void;
+  /** Remember which progression of an exercise you are working at. */
+  setExerciseLevel: (exerciseId: string, level: number) => void;
   resetAll: () => void;
 }
 
@@ -129,6 +131,7 @@ export const useProgressStore = create<ProgressState>()(
 
         // 4. XP.
         const xpBreakdown = computeXp({
+          effort: input.routine.effort,
           activeSec: input.activeSec,
           stepsCompleted: input.stepsCompleted,
           stepsTotal: input.stepsTotal,
@@ -220,6 +223,14 @@ export const useProgressStore = create<ProgressState>()(
           },
         });
       },
+
+      setExerciseLevel: (exerciseId, level) =>
+        set((state) => ({
+          progress: {
+            ...state.progress,
+            exerciseLevels: { ...(state.progress.exerciseLevels ?? {}), [exerciseId]: level },
+          },
+        })),
 
       unlockBadge: (id) => {
         const { progress } = get();

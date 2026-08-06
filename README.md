@@ -13,7 +13,7 @@ for everything else.
   curve and flavor titles, a one-session-a-day goal with a week strip, 14
   achievements, and weekly dose per body area against the point where
   flexibility gains flatten out.
-- **Content** — 52 exercises and 6 prebuilt routines, plus a builder for your
+- **Content** — 66 exercises and 6 prebuilt routines, plus a builder for your
   own.
 - **PWA** — installable on iOS/Android home screens, fully offline after the
   first visit. Architected so it can later be wrapped with Capacitor for the
@@ -274,20 +274,41 @@ them in the same session is the mistake the routine set is designed to avoid.
 
 | Routine | When | Character |
 |---|---|---|
-| Daily Warp | any day, any time | The baseline. Covers both sports. |
-| Hip Nebula (+ Long) | straight before climbing | Dynamic hip prep for high steps and drop knees. |
+| Daily Warp | any day; also the pre-climb warm-up | The six-minute primer. Never hard. |
+| Hip Nebula | 2–3 × a week, rest or easy days | Heavy. Loaded end-range for frogging. |
+| Lower Orbit | 1 × a week, rest day | Heavy. Flexion, extension, dorsiflexion. |
 | Stride Ignition (+ Long) | before running | Raise, activate, mobilise, potentiate. |
-| Deep Dive | rest days, or 4–6 h after climbing | Loaded eccentrics, long holds, ankle work. |
+| Deep Dive | rest days, or 4–6 h after climbing | Slower recovery work: eccentrics, long holds, calves. |
 
-This is also why the recovery routine exists at all: it lets a daily streak
-survive without long static holds landing right before a climb.
+**There is a second split, and it is about dose rather than timing.** A daily
+primer and a training session used to be the same routine — one that was too
+long to do every day and too light to change anything. They are separate now:
+six minutes that are never hard, and two sessions that unmistakably are.
+
+`Routine.effort` carries that into XP (`EFFORT_WEIGHT` in `src/game/xp.ts`),
+weighting the work-dependent terms so a primer pays about 28 and a heavy
+session about 90–100. The daily-goal and streak-milestone bonuses are *not*
+weighted: turning up is worth the same whichever routine got you there. The
+streak itself is deliberately indifferent — any completed routine holds it, so
+a heavy session is never something the streak can pressure you into.
+
+Heavy routines carry a badge in the list and a hard caution, because starting
+one by accident the day before a project costs you the project.
 
 Things the model has to represent, and where:
 
 - **`Modality`** on every exercise (`dynamic`, `static`, `loaded`, `eccentric`,
-  `activation`, `potentiation`). It drives which routine an exercise belongs in
-  and what the session screen calls the current phase — "lower slowly" for a
-  Nordic curl, "hold" for a couch stretch.
+  `activation`, `potentiation`, `isometric`, `pails-rails`). It drives which
+  routine an exercise belongs in and what the session screen calls the current
+  phase — "lower slowly" for a Nordic curl, "hold" for a couch stretch, "push,
+  then pull" for the loaded frog.
+- **`RoutineStep.restSec`** — heavy work sets its own rest. A minute between
+  loaded sets is the difference between training and a circuit, and it cannot
+  come from a global setting meant for stretches.
+- **`Exercise.levels`** — ordered progressions, picked during the session and
+  remembered (`UserProgress.exerciseLevels`). Only the Copenhagen has them so
+  far, because for that one the lever *is* the training variable: too short is
+  pointless, too long is a groin strain.
 - **Rep work is self-paced** (`Exercise.mode === 'reps'`). The clock counts up
   and waits for you rather than rushing an eccentric; `SessionEvent.ADVANCE`
   ends the set. Nordic curls are the reason this exists.
