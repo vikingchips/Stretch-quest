@@ -1,8 +1,8 @@
 # Force sensor firmware
 
-An ESP32-C3 that reads a load cell and speaks Tindeq's open Progressor BLE API,
-so the official Tindeq app works with it on day one and the StretchQuest finger
-module works with it over Web Bluetooth on day two. Wiring, parts and the hard
+An ESP32-C3 that reads a load cell and speaks Tindeq's open Progressor BLE
+API, so the official Tindeq app works with it on day one and StretchQuest's
+finger module works with it over Web Bluetooth. Wiring, parts and the hard
 electrical rules are in [`../BRIEF.md.md`](../BRIEF.md.md).
 
 ```bash
@@ -11,43 +11,93 @@ pio run -t upload        # flash over USB-C
 pio device monitor       # 115200 baud
 ```
 
-The app half of this project lives in `../src/finger/` and needs none of this
-to run — it has a simulated force source.
+## Modes
+
+`src/config.h` has one switch:
+
+| Mode | What | Gain |
+|---|---|---|
+| `MODE_LOADCELL` | The real cell in the screw terminals | 128 |
+| `MODE_POT` | A potentiometer as stand-in bridge | 1 |
+| `MODE_SIM` | No hardware — synthetic hang curve | — |
+
+The pot is not just a toy: with BLE in place it is a full test rig. Turn the
+knob and StretchQuest's live graph moves, which exercises the radio, the wire
+format, the session engine and the UI before the cell has even shipped.
+
+**Pot wiring that gives the full travel:** two equal resistors across E+/E−
+as a midpoint, A− to the midpoint, wiper to A+. With A− grounded instead, the
+differential input only sees half its range and the top half of the travel
+clips — which looks like a firmware bug and is not.
+
+Calibration is stored **per mode** in NVS. A pot calibration (~80 000
+counts/kg at gain 1) leaking into cell mode would make the first real
+measurement lie by a factor of five, so the modes never share keys.
+
+## Structure
+
+| File | Owns |
+|---|---|
+| `config.h` | Mode switch, pins, constants |
+| `sensor.*` | NAU7802 / pot / simulator, behind one seam |
+| `calibration.*` | NVS, tare, counts-per-kg |
+| `progressor.*` | The BLE service and the wire format |
+| `ui.*` | The OLED |
+| `main.cpp` | The loop that ties them together |
+
+## Controls
+
+BOOT button: short press = tare, long press = reset peak.
+
+Serial at 115200: `t` tare · `p` reset peak · `c<kg>` calibrate with a known
+weight (`c10.5`) · `s` status · `r` reset calibration · `x` dump the
+canonical weight packet as hex · `?` help.
+
+## The protocol, and how to know both sides agree
+
+`src/progressor.cpp` and the app's `../src/finger/progressorProtocol.ts` are
+two halves of one contract — both written against BigBanger's MicroPython
+firmware (github.com/FilMarini/bigbanger) read as a specification. UUIDs
+`7e4e1701/02/03-…`, commands tare 100 / start 101 / stop 102 / battery 111,
+weight packets `[0x01][0x08][float32 LE kg][uint32 LE µs]`.
+
+The serial command `x` prints the canonical fixture packet
+(`kg = 12.5, t = 1 000 000 µs`):
+
+```
+01 08 00 00 48 41 40 42 0f 00
+```
+
+The app has a test asserting those exact bytes parse to 12.5 kg at 1000 ms
+(`progressorProtocol.test.ts`, "agrees with the firmware byte for byte").
+If the dump and the test ever disagree, believe neither and find out why.
+
+Battery voltage is a **stubbed 3700 mV** until the A1 divider is fitted
+(milestone 6) — an app showing 3.7 V is showing the stub, not a battery.
 
 ## Milestones
 
-Current state: **1 is written, nothing else is.** The hardware has not arrived.
-Each milestone has an acceptance test; do not move on without it.
-
-1. **I2C scan** — `0x2A` and `0x3C` both answer. Confirms the whole chain.
-   *(This is what `src/main.cpp` does today.)*
-2. **Raw stream** — 80 SPS to the serial monitor. Write down the resting noise
-   level; every later threshold is judged against it.
-3. **Calibration** — two-point with known weights (5 and 20 kg), factors stored
-   in NVS flash. Verify linearity with a third weight that was not used to fit.
-4. **Progressor API** — the official Tindeq app connects, shows live force, and
-   tare works. **This is the phase 1 finish line** — the device is usable here.
-5. **OLED** — battery level, BLE state, last max. Auto-off after ~10 s; the
-   panel draws ~20 mA lit, which is not free on a 1200 mAh cell.
-6. **Power** — deep sleep on inactivity, battery level into the API's battery
-   field. Wake source (button vs slow BLE advertising) is an open decision;
-   pick one and write down why.
+1. **I2C scan** — done, folded into startup error handling: `0x2A` and
+   `0x3C` are reported if missing.
+2. **Raw stream** — done. 80 SPS, filtered with a ~40 ms time constant.
+   Write down the resting noise level; later thresholds are judged by it.
+3. **Calibration** — implemented (`t` + `c<kg>`, persisted per mode).
+   Verify linearity with a third weight that was not used to fit.
+4. **Progressor API** — implemented, to be verified against the official
+   Tindeq app and StretchQuest. **The phase 1 finish line.**
+5. **OLED polish** — auto-off after ~10 s idle (the panel draws ~20 mA lit).
+   Not started.
+6. **Power** — deep sleep, real battery reading into the API's battery
+   field. Not started; wake source (button vs slow advertising) still to be
+   decided.
 
 ## Rules that will cost you hardware if ignored
 
-- **JST-PH polarity is not standardised.** Never cut the battery lead. Measure
-  which conductor is positive, solder that to BAT+. The battery goes on last,
-  once everything works over USB.
+- **JST-PH polarity is not standardised.** Never cut the battery lead.
+  Measure which conductor is positive, solder that to BAT+. Solder with the
+  battery unplugged, always.
 - Never use **A0 (GPIO2)** or **D8/D9** — strapping pins. Never use
   **A3 (GPIO5)** — ADC2, unreliable while the radio transmits.
-- The C3's ADC is non-linear and saturates near 2.5 V. Calibrate in software
-  and show four coarse battery levels, never a fabricated percentage.
-
-## Protocol
-
-The Progressor GATT UUIDs, command bytes and TLV layout are documented at
-<https://tindeq.com/progressor_api/> and readable in BigBanger's MicroPython
-firmware (<https://github.com/FilMarini/bigbanger>, Apache 2.0). Read it as a
-specification and port it — the app-side parser in
-`../src/finger/progressorProtocol.ts` is the reference for what this firmware
-has to emit.
+- The C3's ADC is non-linear and saturates near 2.5 V. Calibrate the battery
+  reading in software and show four coarse levels, never a fabricated
+  percentage.

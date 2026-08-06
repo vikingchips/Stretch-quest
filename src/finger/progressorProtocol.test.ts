@@ -43,6 +43,19 @@ describe('protocol constants', () => {
 });
 
 describe('parseNotification', () => {
+  it('agrees with the firmware byte for byte', () => {
+    // The firmware prints this exact packet for kg=12.5, t=1_000_000us via
+    // its serial 'x' command (firmware/src/progressor.cpp). If this test and
+    // that dump ever disagree, believe neither side and find out why.
+    const hex = '01 08 00 00 48 41 40 42 0f 00';
+    const bytes = hex.split(' ').map((b) => parseInt(b, 16));
+    const view = new DataView(new Uint8Array(bytes).buffer);
+    const { samples } = parseNotification(view);
+    expect(samples).toHaveLength(1);
+    expect(samples![0].kg).toBeCloseTo(12.5, 6);
+    expect(samples![0].t).toBe(1000);
+  });
+
   it('reads a single weight sample', () => {
     const { samples } = parseNotification(weightPacket([{ kg: 42.5, us: 1_500_000 }]));
     expect(samples).toHaveLength(1);
