@@ -37,8 +37,17 @@ export class BleForceSource extends SourceBase implements ForceSource {
     this.setStatus('connecting');
     try {
       // Must be reached from a user gesture, or the chooser never opens.
+      //
+      // Two filters, OR-ed: the name and the service. A 128-bit service UUID
+      // plus a name do not fit one 31-byte advertisement, so the name rides
+      // in the scan response — where Chrome on Android has a history of not
+      // seeing it. The service UUID sits in the main advertisement, so that
+      // filter matches even when the name never arrives.
       const device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: PROGRESSOR_NAME_PREFIX }],
+        filters: [
+          { namePrefix: PROGRESSOR_NAME_PREFIX },
+          { services: [PROGRESSOR_SERVICE] },
+        ],
         optionalServices: [PROGRESSOR_SERVICE],
       });
       device.addEventListener('gattserverdisconnected', this.handleDisconnect);
