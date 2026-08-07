@@ -11,7 +11,7 @@
 #define MODE_POT      1
 #define MODE_SIM      2
 
-#define MODE MODE_POT        // <<< CHANGE HERE
+#define MODE MODE_LOADCELL        // <<< CHANGE HERE
 
 // ======================= Pins =======================
 // Hard rules from BRIEF.md.md: never GPIO2/A0 or D8/D9 (strapping pins),
