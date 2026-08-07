@@ -4,6 +4,7 @@ import { BLE_UNSUPPORTED_MESSAGE, bleSupported } from '../../finger/bleSource';
 import { RETEST_MAX_DAYS, RETEST_MIN_DAYS } from '../../finger/constants';
 import { isGradableEdge } from '../../finger/grades';
 import {
+  activeSource,
   disconnectSource,
   mockSource,
   onForceSample,
@@ -118,10 +119,13 @@ export function DevicePage() {
           </button>
           {connected && (
             <div className="flex gap-3">
+              {/* Tares whatever is connected. This used to be wired to the
+                  simulated source only, and hidden for everything else —
+                  exactly backwards, since a real cell is the one that drifts
+                  and the one you cannot reach without walking to the board. */}
               <button
-                onClick={() => void (source.kind === 'mock' ? mockSource() : null)?.tare()}
+                onClick={() => void activeSource()?.tare()}
                 className="flex-1 border border-line-soft py-3 text-sm lowercase text-ink-soft hover:text-ink"
-                hidden={source.kind !== 'mock'}
               >
                 tare
               </button>
