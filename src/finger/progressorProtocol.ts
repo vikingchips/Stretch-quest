@@ -49,6 +49,43 @@ export const RESPONSE = {
   lowPowerWarning: 4,
 } as const;
 
+/**
+ * Extensions of ours, not Tindeq's.
+ *
+ * Tindeq reserves 105 and 106 for calibration, but their payload format is
+ * not something this project has a verified reference for — BigBanger reads
+ * the whole write as a single integer, so multi-byte commands do not exist
+ * in the firmware we checked ourselves against. Guessing at a format and
+ * silently disagreeing with a real Progressor is worse than owning a
+ * private range, so these sit far above theirs and are documented as ours.
+ *
+ * A real Progressor will simply ignore them.
+ */
+export const SQ_COMMAND = {
+  /** 0xC0 + float32 LE known kilograms. Calibrates against the reading now. */
+  calibrate: 0xc0,
+} as const;
+
+export const SQ_RESPONSE = {
+  /** 0x40 + uint8 ok + float32 LE counts-per-kg. */
+  calibration: 0x40,
+} as const;
+
+export interface CalibrationResult {
+  ok: boolean;
+  /** The factor the device settled on. Zero when it refused. */
+  countsPerKg: number;
+}
+
+/** A calibrate command with its weight payload. */
+export function calibrateCommand(knownKg: number): Uint8Array {
+  const buffer = new ArrayBuffer(5);
+  const view = new DataView(buffer);
+  view.setUint8(0, SQ_COMMAND.calibrate);
+  view.setFloat32(1, knownKg, true);
+  return new Uint8Array(buffer);
+}
+
 /** One (float32 kg, uint32 microseconds) pair. */
 const WEIGHT_ENTRY_BYTES = 8;
 
@@ -58,6 +95,8 @@ export interface Notification {
   batteryMv?: number;
   /** The device is about to run out. */
   lowPower?: boolean;
+  /** Answer to a calibrate command. Ours, not Tindeq's. */
+  calibration?: CalibrationResult;
 }
 
 /**
@@ -89,6 +128,15 @@ export function parseNotification(view: DataView): Notification {
       });
     }
     return { samples };
+  }
+
+  if (tag === SQ_RESPONSE.calibration && available >= 5) {
+    return {
+      calibration: {
+        ok: view.getUint8(2) === 1,
+        countsPerKg: view.getFloat32(3, true),
+      },
+    };
   }
 
   if (tag === RESPONSE.lowPowerWarning) {

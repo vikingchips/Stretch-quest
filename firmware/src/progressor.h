@@ -29,6 +29,14 @@ void progressorOnSample(float kg);
 // consumes it in the loop, where the filtered reading lives.
 bool progressorConsumeTareRequest();
 
+// A calibrate command arrived, carrying the known weight now hanging.
+// Returns true once per request and writes the weight to `knownKg`.
+bool progressorConsumeCalibrationRequest(float *knownKg);
+
+// Report the outcome back to whoever asked. Called by main once the
+// calibration has actually been attempted.
+void progressorReportCalibration(bool ok, float countsPerKg);
+
 // Build one weight notification: [0x01][0x08][float32 LE kg][uint32 LE us].
 // Public so the serial 'x' command can print the exact bytes for
 // cross-checking against the app's parser tests. `out` needs 10 bytes.

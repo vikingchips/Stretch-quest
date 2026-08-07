@@ -179,8 +179,16 @@ void loop() {
     progressorOnSample(forceKg);
   }
 
-  // 3. A tare that arrived over BLE runs here, where the filter lives.
+  // 3. Tare and calibration that arrived over BLE run here, where the
+  //    filtered reading and the flash write both live.
   if (progressorConsumeTareRequest()) doTare();
+
+  float knownKg;
+  if (progressorConsumeCalibrationRequest(&knownKg)) {
+    bool ok = filterPrimed && calibrationCalibrate(filteredCounts, knownKg);
+    if (!filterPrimed) Serial.println("no samples yet — cannot calibrate");
+    progressorReportCalibration(ok, ok ? calibrationFactor() : 0.0f);
+  }
 
   // 4. Measured sample rate, once a second.
   if (millis() - lastRate >= 1000) {

@@ -29,6 +29,20 @@ enum ResponseTag : uint8_t {
   RES_WEIGHT_MEAS  = 1,
 };
 
+/*
+ * Ours, not Tindeq's.
+ *
+ * Tindeq reserves 105 and 106 for calibration, but this project has no
+ * verified reference for their payload format — BigBanger reads the whole
+ * write as one integer, so multi-byte commands do not exist in the firmware
+ * we checked ourselves against. Guessing at a format and silently
+ * disagreeing with a real Progressor would be worse than owning a private
+ * range, so these sit far above theirs. A real Progressor ignores them, and
+ * the app's protocol file documents the same pair.
+ */
+static const uint8_t SQ_CMD_CALIBRATE = 0xC0;  // + float32 LE known kg
+static const uint8_t SQ_RES_CALIBRATE = 0x40;  // + uint8 ok + float32 LE factor
+
 static const char    *APP_VERSION = "1.0.0";
 static const uint64_t DEVICE_ID   = 42;
 
@@ -41,6 +55,8 @@ static NimBLECharacteristic *dataChar = nullptr;
 static volatile bool streaming     = false;
 static volatile bool subscribed    = false;
 static volatile bool tareRequested = false;
+static volatile bool calibrationRequested = false;
+static volatile float calibrationKg = 0.0f;
 static volatile ProgressorState state = PROGRESSOR_ADVERTISING;
 static uint32_t streamStartUs = 0;
 
@@ -78,6 +94,18 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic *c, NimBLEConnInfo &) override {
     NimBLEAttValue value = c->getValue();
     if (value.size() < 1) return;
+
+    // Ours, and the only command carrying a payload — handled before the
+    // switch so Tindeq's single-byte vocabulary stays exactly as it was.
+    if (value[0] == SQ_CMD_CALIBRATE && value.size() >= 5) {
+      float kg;
+      memcpy(&kg, value.data() + 1, 4);
+      calibrationKg = kg;
+      // Deferred like the tare: the filtered reading and the NVS write both
+      // live in the main loop, and neither belongs in a BLE callback.
+      calibrationRequested = true;
+      return;
+    }
 
     switch (value[0]) {
       case CMD_TARE_SCALE:
@@ -225,4 +253,22 @@ bool progressorConsumeTareRequest() {
   if (!tareRequested) return false;
   tareRequested = false;
   return true;
+}
+
+bool progressorConsumeCalibrationRequest(float *knownKg) {
+  if (!calibrationRequested) return false;
+  calibrationRequested = false;
+  *knownKg = calibrationKg;
+  return true;
+}
+
+void progressorReportCalibration(bool ok, float countsPerKg) {
+  if (!dataChar) return;
+  uint8_t pkt[7];
+  pkt[0] = SQ_RES_CALIBRATE;
+  pkt[1] = 5;
+  pkt[2] = ok ? 1 : 0;
+  memcpy(pkt + 3, &countsPerKg, 4);
+  dataChar->setValue(pkt, sizeof(pkt));
+  dataChar->notify();
 }

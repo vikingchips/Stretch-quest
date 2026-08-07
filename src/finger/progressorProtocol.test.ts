@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   COMMAND,
+  SQ_COMMAND,
+  SQ_RESPONSE,
+  calibrateCommand,
   PROGRESSOR_CONTROL_POINT,
   PROGRESSOR_DATA_POINT,
   PROGRESSOR_SERVICE,
@@ -131,5 +134,54 @@ describe('parseNotification', () => {
     view.setUint8(0, RESPONSE.commandResponse);
     view.setUint8(1, 8);
     expect(parseNotification(view)).toEqual({});
+  });
+});
+
+describe('calibration, our own extension', () => {
+  it('sits far above Tindeq\'s command range', () => {
+    // Their vocabulary runs 100-112. Ours has to stay clear of anything they
+    // might add, and a real Progressor must simply ignore it.
+    expect(SQ_COMMAND.calibrate).toBeGreaterThan(120);
+    expect(SQ_RESPONSE.calibration).not.toBe(RESPONSE.commandResponse);
+    expect(SQ_RESPONSE.calibration).not.toBe(RESPONSE.weightMeasurement);
+  });
+
+  it('carries the weight as a little-endian float', () => {
+    const cmd = calibrateCommand(20.6);
+    expect(cmd[0]).toBe(SQ_COMMAND.calibrate);
+    expect(cmd).toHaveLength(5);
+    const view = new DataView(cmd.buffer, cmd.byteOffset, cmd.byteLength);
+    expect(view.getFloat32(1, true)).toBeCloseTo(20.6, 4);
+  });
+
+  it('reads a successful calibration response', () => {
+    // What firmware/src/progressor.cpp emits: tag, length, ok, factor.
+    const buffer = new ArrayBuffer(7);
+    const view = new DataView(buffer);
+    view.setUint8(0, SQ_RESPONSE.calibration);
+    view.setUint8(1, 5);
+    view.setUint8(2, 1);
+    view.setFloat32(3, 13980.5, true);
+    const { calibration } = parseNotification(view);
+    expect(calibration!.ok).toBe(true);
+    expect(calibration!.countsPerKg).toBeCloseTo(13980.5, 1);
+  });
+
+  it('reads a refusal', () => {
+    const buffer = new ArrayBuffer(7);
+    const view = new DataView(buffer);
+    view.setUint8(0, SQ_RESPONSE.calibration);
+    view.setUint8(1, 5);
+    view.setUint8(2, 0);
+    view.setFloat32(3, 0, true);
+    expect(parseNotification(view).calibration).toEqual({ ok: false, countsPerKg: 0 });
+  });
+
+  it('does not mistake a weight packet for a calibration answer', () => {
+    const { calibration, samples } = parseNotification(
+      weightPacket([{ kg: 5, us: 0 }]),
+    );
+    expect(calibration).toBeUndefined();
+    expect(samples).toHaveLength(1);
   });
 });

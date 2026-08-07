@@ -1,3 +1,4 @@
+import type { CalibrationResult } from './progressorProtocol';
 import type { ForceSample, SourceStatus } from './types';
 
 /**
@@ -15,6 +16,13 @@ export interface ForceSource {
   connect(): Promise<void>;
   disconnect(): void;
   tare(): Promise<void>;
+  /**
+   * Calibrate against a known weight hanging right now. Returns the factor
+   * the device settled on, or null if it refused — which it does when the
+   * reading barely moved, meaning the weight is not on or the tare was taken
+   * with it already hanging.
+   */
+  calibrate(knownKg: number): Promise<CalibrationResult | null>;
   /** Volts, or null if the source cannot say. */
   readBattery(): Promise<number | null>;
   /** Returns its own unsubscribe. */

@@ -1,3 +1,4 @@
+import type { CalibrationResult } from './progressorProtocol';
 import { SourceBase, type ForceSource } from './source';
 
 /**
@@ -14,6 +15,9 @@ import { SourceBase, type ForceSource } from './source';
 
 const SAMPLE_INTERVAL_MS = 12.5; // 80 Hz, matching the Progressor
 const TIME_CONSTANT_MS = 300;
+/** Roughly what a 150 kg cell at gain 128 lands on. Only used to make the
+ *  simulated calibration report a believable figure. */
+const NOMINAL_COUNTS_PER_KG = 14000;
 const NOISE_IDLE_KG = 0.06;
 // What a 24-bit ADC on a 150 kg cell actually gives at 80 SPS. Higher would
 // make the trace hairier than the hardware it stands in for.
@@ -79,6 +83,19 @@ export class MockForceSource extends SourceBase implements ForceSource {
 
   async tare(): Promise<void> {
     this.offset = this.actual;
+  }
+
+  /**
+   * There is no bridge to scale here, so this reports what a real device
+   * would have concluded from the current reading. It exists so the
+   * calibration screen can be exercised without hanging weights off a
+   * ceiling, and it refuses on a slack rope for the same reason the firmware
+   * does.
+   */
+  async calibrate(knownKg: number): Promise<CalibrationResult | null> {
+    const reading = this.actual - this.offset;
+    if (knownKg < 0.05 || Math.abs(reading) < 0.5) return { ok: false, countsPerKg: 0 };
+    return { ok: true, countsPerKg: (NOMINAL_COUNTS_PER_KG * reading) / knownKg };
   }
 
   async readBattery(): Promise<number | null> {

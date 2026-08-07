@@ -5,8 +5,10 @@ import {
   PROGRESSOR_DATA_POINT,
   PROGRESSOR_NAME_PREFIX,
   PROGRESSOR_SERVICE,
+  calibrateCommand,
   commandBuffer,
   parseNotification,
+  type CalibrationResult,
 } from './progressorProtocol';
 
 /**
@@ -33,6 +35,7 @@ export class BleForceSource extends SourceBase implements ForceSource {
   private device: BluetoothDevice | null = null;
   private control: BluetoothRemoteGATTCharacteristic | null = null;
   private batteryResolve: ((mv: number | null) => void) | null = null;
+  private calibrationResolve: ((r: CalibrationResult | null) => void) | null = null;
   private lowPower = false;
 
   async connect(): Promise<void> {
@@ -86,6 +89,23 @@ export class BleForceSource extends SourceBase implements ForceSource {
     await this.write(COMMAND.tare);
   }
 
+  async calibrate(knownKg: number): Promise<CalibrationResult | null> {
+    if (!this.control) return null;
+    // Same request/notification pairing as the battery read: the device
+    // answers on the data point rather than replying to the write.
+    const answer = new Promise<CalibrationResult | null>((resolve) => {
+      this.calibrationResolve = resolve;
+      setTimeout(() => {
+        if (this.calibrationResolve === resolve) {
+          this.calibrationResolve = null;
+          resolve(null);
+        }
+      }, 3000);
+    });
+    await this.control.writeValue(calibrateCommand(knownKg) as BufferSource);
+    return answer;
+  }
+
   async readBattery(): Promise<number | null> {
     if (!this.control) return null;
     // The answer arrives as a notification rather than a reply, so the
@@ -117,11 +137,16 @@ export class BleForceSource extends SourceBase implements ForceSource {
   private handleNotification = (event: Event): void => {
     const target = event.target as BluetoothRemoteGATTCharacteristic;
     if (!target.value) return;
-    const { samples, batteryMv, lowPower } = parseNotification(target.value);
+    const { samples, batteryMv, lowPower, calibration } = parseNotification(target.value);
     if (samples) {
       for (const sample of samples) this.emit(sample);
     }
     if (lowPower) this.lowPower = true;
+    if (calibration && this.calibrationResolve) {
+      const resolve = this.calibrationResolve;
+      this.calibrationResolve = null;
+      resolve(calibration);
+    }
     if (batteryMv !== undefined && this.batteryResolve) {
       const resolve = this.batteryResolve;
       this.batteryResolve = null;

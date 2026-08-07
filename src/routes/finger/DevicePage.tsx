@@ -53,6 +53,9 @@ export function DevicePage() {
   const [error, setError] = useState<string | null>(null);
   const [edgeDraft, setEdgeDraft] = useState('');
   const [mockLevel, setMockLevel] = useState(0);
+  const [calWeight, setCalWeight] = useState('');
+  const [calibrating, setCalibrating] = useState(false);
+  const [calResult, setCalResult] = useState<string | null>(null);
 
   const connected = source.status === 'connected';
   const supported = bleSupported();
@@ -65,6 +68,38 @@ export function DevicePage() {
       // A cancelled chooser is not a failure worth shouting about.
       const message = e instanceof Error ? e.message : String(e);
       setError(/cancel|user gesture|chooser/i.test(message) ? null : message);
+    }
+  }
+
+  async function runCalibration() {
+    const kg = Number(calWeight);
+    if (!Number.isFinite(kg) || kg <= 0) {
+      setCalResult('Type the weight that is hanging right now, in kilograms.');
+      return;
+    }
+    setCalibrating(true);
+    setCalResult(null);
+    try {
+      const result = await activeSource()?.calibrate(kg);
+      if (!result) {
+        setCalResult('The device did not answer. Still connected?');
+      } else if (!result.ok) {
+        // The device's own guard: a real weight moves the reading by
+        // thousands of counts, so a small swing means it is not actually on,
+        // or the tare was taken with it already hanging.
+        setCalResult(
+          'The reading barely moved. Is the weight actually hanging, and did you tare before putting it on?',
+        );
+      } else {
+        setCalResult(
+          `calibrated · ${result.countsPerKg.toFixed(0)} counts per kg · ` +
+            `${(1 / result.countsPerKg).toFixed(4)} kg per count`,
+        );
+      }
+    } catch (e) {
+      setCalResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCalibrating(false);
     }
   }
 
@@ -167,6 +202,50 @@ export function DevicePage() {
           </div>
         )}
       </section>
+
+      {connected && (
+        <section className="mb-12">
+          <h2 className="mb-3 text-sm lowercase text-ink-soft">calibration</h2>
+          <ol className="measure mb-4 space-y-1 text-xs leading-relaxed text-ink-soft">
+            <li>1 · hang the board with nothing pulling on it, then tare above.</li>
+            <li>2 · hang a weight you know, gently — never drop it on.</li>
+            <li>3 · type that weight here and calibrate.</li>
+            <li>4 · swap in a different known weight and check what it reads.</li>
+          </ol>
+          <div className="flex gap-3">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              value={calWeight}
+              onChange={(e) => setCalWeight(e.target.value)}
+              placeholder="known weight, kg"
+              className="flex-1 border border-line-soft bg-surface px-4 py-3 text-sm tabular-nums lowercase text-ink placeholder:text-ink-soft"
+            />
+            <button
+              onClick={runCalibration}
+              disabled={calibrating}
+              className="border border-line px-6 text-sm lowercase text-ink hover:bg-surface disabled:text-line"
+            >
+              {calibrating ? '…' : 'calibrate'}
+            </button>
+          </div>
+          {calResult && (
+            <p
+              className={`measure mt-3 text-xs leading-relaxed ${
+                calResult.startsWith('calibrated') ? 'text-pine-deep' : 'text-clay'
+              }`}
+            >
+              {calResult}
+            </p>
+          )}
+          <p className="measure mt-3 text-xs leading-relaxed text-ink-soft">
+            Calibrate on the heaviest weight you have — the fit is most accurate there, and your
+            training loads sit above it either way. Step 4 is the one that matters: a weight that
+            was not used to fit is the only thing that shows whether the cell is linear.
+          </p>
+        </section>
+      )}
 
       <section className="mb-12">
         <h2 className="mb-3 text-sm lowercase text-ink-soft">bodyweight</h2>
