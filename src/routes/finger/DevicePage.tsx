@@ -4,6 +4,13 @@ import { BLE_UNSUPPORTED_MESSAGE, bleSupported } from '../../finger/bleSource';
 import { RETEST_MAX_DAYS, RETEST_MIN_DAYS } from '../../finger/constants';
 import { isGradableEdge } from '../../finger/grades';
 import {
+  coverageWarning,
+  fitCalibration,
+  fitQuality,
+} from '../../finger/calibration';
+import { maxByHand } from '../../finger/maxTest';
+import { MAX_HANGS_BAND } from '../../finger/constants';
+import {
   activeSource,
   disconnectSource,
   mockSource,
@@ -60,6 +67,15 @@ export function DevicePage() {
   const connected = source.status === 'connected';
   const supported = bleSupported();
 
+  const fit = fitCalibration(finger.calibrationPoints);
+  // Compared against the heaviest load the protocol will ask for: max hangs
+  // sit at the top of the band, and that is the number the reference weights
+  // have to reach before the fit means anything up there.
+  const maxes = maxByHand(finger.maxes, 'half-crimp', finger.activeEdgeMm);
+  const heaviestTrainingKg =
+    Math.max(maxes.left ?? 0, maxes.right ?? 0) * MAX_HANGS_BAND.hi;
+  const coverage = coverageWarning(fit, heaviestTrainingKg);
+
   async function connectBle() {
     setError(null);
     try {
@@ -71,7 +87,13 @@ export function DevicePage() {
     }
   }
 
-  async function runCalibration() {
+  /**
+   * Capture one reference point, then refit and push the new factor.
+   *
+   * The fit is done here rather than on the device so it can be shown with
+   * its residuals — the number alone was never the useful part.
+   */
+  async function addPoint() {
     const kg = Number(calWeight);
     if (!Number.isFinite(kg) || kg <= 0) {
       setCalResult('Type the weight that is hanging right now, in kilograms.');
@@ -80,22 +102,33 @@ export function DevicePage() {
     setCalibrating(true);
     setCalResult(null);
     try {
-      const result = await activeSource()?.calibrate(kg);
-      if (!result) {
+      const counts = await activeSource()?.readCounts();
+      if (counts === null || counts === undefined) {
         setCalResult('The device did not answer. Still connected?');
-      } else if (!result.ok) {
-        // The device's own guard: a real weight moves the reading by
-        // thousands of counts, so a small swing means it is not actually on,
-        // or the tare was taken with it already hanging.
+        return;
+      }
+      // The same guard the firmware applies to its own one-shot calibration:
+      // a real weight moves the reading by thousands of counts.
+      if (Math.abs(counts) < 100) {
         setCalResult(
           'The reading barely moved. Is the weight actually hanging, and did you tare before putting it on?',
         );
-      } else {
-        setCalResult(
-          `calibrated · ${result.countsPerKg.toFixed(0)} counts per kg · ` +
-            `${(1 / result.countsPerKg).toFixed(4)} kg per count`,
-        );
+        return;
       }
+
+      const points = [...finger.calibrationPoints, { kg, counts, at: new Date().toISOString() }];
+      const next = fitCalibration(points);
+      if (!next) {
+        setCalResult('Those points do not make a line.');
+        return;
+      }
+      finger.addCalibrationPoint({ kg, counts, at: new Date().toISOString() });
+      await activeSource()?.setFactor(next.countsPerKg);
+      setCalWeight('');
+      setCalResult(
+        `calibrated · ${next.countsPerKg.toFixed(0)} counts per kg · ` +
+          `${(1 / next.countsPerKg).toFixed(4)} kg per count`,
+      );
     } catch (e) {
       setCalResult(e instanceof Error ? e.message : String(e));
     } finally {
@@ -209,8 +242,8 @@ export function DevicePage() {
           <ol className="measure mb-4 space-y-1 text-xs leading-relaxed text-ink-soft">
             <li>1 · hang the board with nothing pulling on it, then tare above.</li>
             <li>2 · hang a weight you know, gently — never drop it on.</li>
-            <li>3 · type that weight here and calibrate.</li>
-            <li>4 · swap in a different known weight and check what it reads.</li>
+            <li>3 · type that weight here and add it as a point.</li>
+            <li>4 · repeat with heavier weights, as far up as you can reach.</li>
           </ol>
           <div className="flex gap-3">
             <input
@@ -223,11 +256,11 @@ export function DevicePage() {
               className="flex-1 border border-line-soft bg-surface px-4 py-3 text-sm tabular-nums lowercase text-ink placeholder:text-ink-soft"
             />
             <button
-              onClick={runCalibration}
+              onClick={addPoint}
               disabled={calibrating}
               className="border border-line px-6 text-sm lowercase text-ink hover:bg-surface disabled:text-line"
             >
-              {calibrating ? '…' : 'calibrate'}
+              {calibrating ? '…' : 'add point'}
             </button>
           </div>
           {calResult && (
@@ -239,10 +272,72 @@ export function DevicePage() {
               {calResult}
             </p>
           )}
-          <p className="measure mt-3 text-xs leading-relaxed text-ink-soft">
-            Calibrate on the heaviest weight you have — the fit is most accurate there, and your
-            training loads sit above it either way. Step 4 is the one that matters: a weight that
-            was not used to fit is the only thing that shows whether the cell is linear.
+
+          {fit && (
+            <div className="mt-6">
+              <ul className="border-t border-line-soft">
+                {finger.calibrationPoints.map((point, i) => {
+                  const residual = fit.residualsPct[i] ?? 0;
+                  return (
+                    <li
+                      key={`${point.kg}-${point.at}`}
+                      className="flex items-center justify-between border-b border-line-soft py-2.5"
+                    >
+                      <span className="text-sm tabular-nums lowercase">
+                        {point.kg.toFixed(1)} kg
+                      </span>
+                      <span className="flex items-center gap-4">
+                        <span
+                          className={`text-xs tabular-nums ${
+                            Math.abs(residual) > 2 ? 'text-clay' : 'text-ink-soft'
+                          }`}
+                        >
+                          {residual >= 0 ? '+' : ''}
+                          {residual.toFixed(2)}%
+                        </span>
+                        <button
+                          onClick={() => finger.removeCalibrationPoint(i)}
+                          className="text-ink-soft hover:text-clay"
+                          aria-label={`Remove the ${point.kg} kg point`}
+                        >
+                          <Icon name="trash" size={15} />
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p className="mt-3 text-xs lowercase tabular-nums text-ink-soft">
+                {fit.countsPerKg.toFixed(0)} counts per kg · {fit.points} point
+                {fit.points === 1 ? '' : 's'} · worst {fit.worstResidualPct.toFixed(2)}% ·{' '}
+                <span
+                  className={
+                    fitQuality(fit) === 'suspect' ? 'text-clay' : 'text-pine-deep'
+                  }
+                >
+                  {fitQuality(fit)}
+                </span>
+              </p>
+
+              {coverage && (
+                <p className="measure mt-3 text-xs leading-relaxed text-clay">{coverage}</p>
+              )}
+
+              <button
+                onClick={() => void finger.clearCalibrationPoints()}
+                className="mt-4 text-xs lowercase text-ink-soft hover:text-clay"
+              >
+                clear all points
+              </button>
+            </div>
+          )}
+
+          <p className="measure mt-4 text-xs leading-relaxed text-ink-soft">
+            More points do not make the number better — a bridge is linear, so one weight and a
+            tare already fix the line. What they give you is evidence: a residual column that
+            agrees to within a percent says the cell and your weights are both honest. What they
+            cannot give you is anything about loads heavier than your heaviest weight.
           </p>
         </section>
       )}

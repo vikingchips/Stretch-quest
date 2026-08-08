@@ -98,6 +98,18 @@ export class MockForceSource extends SourceBase implements ForceSource {
     return { ok: true, countsPerKg: (NOMINAL_COUNTS_PER_KG * reading) / knownKg };
   }
 
+  async readCounts(): Promise<number | null> {
+    // The simulator works in kilograms, so counts are synthesised from the
+    // nominal factor. That keeps the multi-point screen exercisable without
+    // a ceiling, a bucket and sixty litres of water.
+    return (this.actual - this.offset) * NOMINAL_COUNTS_PER_KG;
+  }
+
+  async setFactor(): Promise<boolean> {
+    // Nothing to scale here: the simulated cell reports kilograms directly.
+    return true;
+  }
+
   async readBattery(): Promise<number | null> {
     return 3.9;
   }

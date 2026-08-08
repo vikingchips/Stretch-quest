@@ -190,6 +190,17 @@ void loop() {
     progressorReportCalibration(ok, ok ? calibrationFactor() : 0.0f);
   }
 
+  // The app builds multi-point fits itself: it asks for tared counts, pairs
+  // them with weights it knows, and sends back the factor it worked out.
+  if (progressorConsumeCountsRequest()) {
+    progressorReportCounts(filterPrimed ? filteredCounts - (float)calibrationOffset() : 0.0f);
+  }
+
+  float factor;
+  if (progressorConsumeSetFactorRequest(&factor)) {
+    calibrationSetFactor(factor);
+  }
+
   // 4. Measured sample rate, once a second.
   if (millis() - lastRate >= 1000) {
     sampleRateHz = sampleCount * 1000.0f / (millis() - lastRate);

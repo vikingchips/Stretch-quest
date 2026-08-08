@@ -127,6 +127,12 @@ export function mergeFinger(
       (local.lastAbrahangsAt ?? '') >= (r.lastAbrahangsAt ?? '')
         ? local.lastAbrahangsAt
         : r.lastAbrahangsAt,
+    // Whichever side has more reference points has done more of the work;
+    // merging them would mix measurements from two different rigs.
+    calibrationPoints:
+      local.calibrationPoints.length >= (r.calibrationPoints?.length ?? 0)
+        ? local.calibrationPoints
+        : r.calibrationPoints,
   };
 }
 

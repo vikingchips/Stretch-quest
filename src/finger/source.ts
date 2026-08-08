@@ -23,6 +23,14 @@ export interface ForceSource {
    * with it already hanging.
    */
   calibrate(knownKg: number): Promise<CalibrationResult | null>;
+  /**
+   * The tared reading right now, in raw counts. Paired with a known weight
+   * it becomes one point of a multi-point fit, which — unlike calibrate()
+   * — the app computes and can show residuals for.
+   */
+  readCounts(): Promise<number | null>;
+  /** Store a factor the app worked out. Returns false if it could not. */
+  setFactor(countsPerKg: number): Promise<boolean>;
   /** Volts, or null if the source cannot say. */
   readBattery(): Promise<number | null>;
   /** Returns its own unsubscribe. */

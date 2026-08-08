@@ -62,13 +62,19 @@ export const RESPONSE = {
  * A real Progressor will simply ignore them.
  */
 export const SQ_COMMAND = {
-  /** 0xC0 + float32 LE known kilograms. Calibrates against the reading now. */
+  /** 0xC0 + float32 LE known kilograms. Single-point calibrate on device. */
   calibrate: 0xc0,
+  /** 0xC1. Report the tared reading right now, in raw counts. */
+  readCounts: 0xc1,
+  /** 0xC2 + float32 LE counts-per-kg. Store a factor computed elsewhere. */
+  setFactor: 0xc2,
 } as const;
 
 export const SQ_RESPONSE = {
   /** 0x40 + uint8 ok + float32 LE counts-per-kg. */
   calibration: 0x40,
+  /** 0x41 + float32 LE tared counts. */
+  counts: 0x41,
 } as const;
 
 export interface CalibrationResult {
@@ -77,13 +83,23 @@ export interface CalibrationResult {
   countsPerKg: number;
 }
 
-/** A calibrate command with its weight payload. */
-export function calibrateCommand(knownKg: number): Uint8Array {
+/** A command byte followed by one little-endian float. */
+function floatCommand(command: number, value: number): Uint8Array {
   const buffer = new ArrayBuffer(5);
   const view = new DataView(buffer);
-  view.setUint8(0, SQ_COMMAND.calibrate);
-  view.setFloat32(1, knownKg, true);
+  view.setUint8(0, command);
+  view.setFloat32(1, value, true);
   return new Uint8Array(buffer);
+}
+
+/** A calibrate command with its weight payload. */
+export function calibrateCommand(knownKg: number): Uint8Array {
+  return floatCommand(SQ_COMMAND.calibrate, knownKg);
+}
+
+/** Store a factor the app worked out from several points. */
+export function setFactorCommand(countsPerKg: number): Uint8Array {
+  return floatCommand(SQ_COMMAND.setFactor, countsPerKg);
 }
 
 /** One (float32 kg, uint32 microseconds) pair. */
@@ -97,6 +113,8 @@ export interface Notification {
   lowPower?: boolean;
   /** Answer to a calibrate command. Ours, not Tindeq's. */
   calibration?: CalibrationResult;
+  /** Tared raw counts, for building a multi-point fit in the app. */
+  counts?: number;
 }
 
 /**
@@ -128,6 +146,10 @@ export function parseNotification(view: DataView): Notification {
       });
     }
     return { samples };
+  }
+
+  if (tag === SQ_RESPONSE.counts && available >= 4) {
+    return { counts: view.getFloat32(2, true) };
   }
 
   if (tag === SQ_RESPONSE.calibration && available >= 5) {

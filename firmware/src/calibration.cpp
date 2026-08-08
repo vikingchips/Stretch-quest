@@ -55,6 +55,19 @@ bool calibrationCalibrate(float filteredCounts, float knownKg) {
   return true;
 }
 
+bool calibrationSetFactor(float factor) {
+  // A zero or non-finite factor would divide every future reading into
+  // nonsense, and it would persist across reboots. Refuse it.
+  if (!isfinite(factor) || fabsf(factor) < 1.0f) {
+    Serial.printf("refusing implausible factor %.3f\n", factor);
+    return false;
+  }
+  countsPerKg = factor;
+  save();
+  Serial.printf("factor set from app: %.1f counts/kg\n", countsPerKg);
+  return true;
+}
+
 void calibrationReset() {
   countsPerKg = DEFAULT_COUNTS_PER_KG;
   save();

@@ -40,8 +40,11 @@ enum ResponseTag : uint8_t {
  * range, so these sit far above theirs. A real Progressor ignores them, and
  * the app's protocol file documents the same pair.
  */
-static const uint8_t SQ_CMD_CALIBRATE = 0xC0;  // + float32 LE known kg
-static const uint8_t SQ_RES_CALIBRATE = 0x40;  // + uint8 ok + float32 LE factor
+static const uint8_t SQ_CMD_CALIBRATE  = 0xC0;  // + float32 LE known kg
+static const uint8_t SQ_CMD_READ_COUNTS = 0xC1; // no payload
+static const uint8_t SQ_CMD_SET_FACTOR = 0xC2;  // + float32 LE counts per kg
+static const uint8_t SQ_RES_CALIBRATE  = 0x40;  // + uint8 ok + float32 LE factor
+static const uint8_t SQ_RES_COUNTS     = 0x41;  // + float32 LE tared counts
 
 static const char    *APP_VERSION = "1.0.0";
 static const uint64_t DEVICE_ID   = 42;
@@ -57,6 +60,9 @@ static volatile bool subscribed    = false;
 static volatile bool tareRequested = false;
 static volatile bool calibrationRequested = false;
 static volatile float calibrationKg = 0.0f;
+static volatile bool countsRequested = false;
+static volatile bool setFactorRequested = false;
+static volatile float setFactorValue = 0.0f;
 static volatile ProgressorState state = PROGRESSOR_ADVERTISING;
 static uint32_t streamStartUs = 0;
 
@@ -104,6 +110,21 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
       // Deferred like the tare: the filtered reading and the NVS write both
       // live in the main loop, and neither belongs in a BLE callback.
       calibrationRequested = true;
+      return;
+    }
+
+    // The app builds multi-point fits itself, so it needs the raw counts and
+    // a way to store what it worked out. Both deferred for the same reason.
+    if (value[0] == SQ_CMD_READ_COUNTS) {
+      countsRequested = true;
+      return;
+    }
+
+    if (value[0] == SQ_CMD_SET_FACTOR && value.size() >= 5) {
+      float factor;
+      memcpy(&factor, value.data() + 1, 4);
+      setFactorValue = factor;
+      setFactorRequested = true;
       return;
     }
 
@@ -260,6 +281,29 @@ bool progressorConsumeCalibrationRequest(float *knownKg) {
   calibrationRequested = false;
   *knownKg = calibrationKg;
   return true;
+}
+
+bool progressorConsumeCountsRequest() {
+  if (!countsRequested) return false;
+  countsRequested = false;
+  return true;
+}
+
+bool progressorConsumeSetFactorRequest(float *countsPerKg) {
+  if (!setFactorRequested) return false;
+  setFactorRequested = false;
+  *countsPerKg = setFactorValue;
+  return true;
+}
+
+void progressorReportCounts(float taredCounts) {
+  if (!dataChar) return;
+  uint8_t pkt[6];
+  pkt[0] = SQ_RES_COUNTS;
+  pkt[1] = 4;
+  memcpy(pkt + 2, &taredCounts, 4);
+  dataChar->setValue(pkt, sizeof(pkt));
+  dataChar->notify();
 }
 
 void progressorReportCalibration(bool ok, float countsPerKg) {

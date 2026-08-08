@@ -37,6 +37,14 @@ bool progressorConsumeCalibrationRequest(float *knownKg);
 // calibration has actually been attempted.
 void progressorReportCalibration(bool ok, float countsPerKg);
 
+// The app asked for the tared reading in raw counts, so it can build a
+// multi-point fit of its own. Same consume-then-report shape as above.
+bool progressorConsumeCountsRequest();
+void progressorReportCounts(float taredCounts);
+
+// The app worked out a factor from several points and wants it stored.
+bool progressorConsumeSetFactorRequest(float *countsPerKg);
+
 // Build one weight notification: [0x01][0x08][float32 LE kg][uint32 LE us].
 // Public so the serial 'x' command can print the exact bytes for
 // cross-checking against the app's parser tests. `out` needs 10 bytes.

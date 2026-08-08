@@ -22,4 +22,8 @@ void  calibrationTare(float filteredCounts);
 // Returns false (and explains on serial) when the swing is implausibly small.
 bool  calibrationCalibrate(float filteredCounts, float knownKg);
 
+// Store a factor computed elsewhere — the app's multi-point fit. Refuses a
+// value that could not be a real calibration rather than bricking the scale.
+bool  calibrationSetFactor(float countsPerKg);
+
 void  calibrationReset();           // back to the mode's factory default

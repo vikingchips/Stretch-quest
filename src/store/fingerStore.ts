@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { RETEST_DEFAULT_DAYS } from '../finger/constants';
+import type { CalibrationPoint } from '../finger/calibration';
 import { findMax } from '../finger/maxTest';
 import type {
   FingerMax,
@@ -33,6 +34,12 @@ export interface FingerData {
   sessions: FingerSessionRecord[];
   /** For the six-hour spacing hint between the two daily Abrahangs. */
   lastAbrahangsAt: string | null;
+  /**
+   * Reference weights measured against raw counts. Kept rather than folded
+   * into a single factor so the fit can be re-examined: residuals are what
+   * tell you whether the cell is linear, and a lone number cannot.
+   */
+  calibrationPoints: CalibrationPoint[];
 }
 
 export const INITIAL_FINGER_DATA: FingerData = {
@@ -44,6 +51,7 @@ export const INITIAL_FINGER_DATA: FingerData = {
   tests: [],
   sessions: [],
   lastAbrahangsAt: null,
+  calibrationPoints: [],
 };
 
 interface FingerState extends FingerData {
@@ -55,6 +63,9 @@ interface FingerState extends FingerData {
   recordSession: (session: FingerSessionRecord) => void;
   /** Drop the detail for a session removed from the main history. */
   deleteSession: (id: string) => void;
+  addCalibrationPoint: (point: CalibrationPoint) => void;
+  removeCalibrationPoint: (index: number) => void;
+  clearCalibrationPoints: () => void;
   currentMax: (hand: Hand, grip: Grip) => FingerMax | undefined;
   /** Days since the newest half-crimp test, or null if there has never been one. */
   daysSinceTest: () => number | null;
@@ -103,6 +114,18 @@ export const useFingerStore = create<FingerState>()(
           return { sessions: state.sessions.filter((s) => s.id !== id) };
         }),
 
+      addCalibrationPoint: (point) =>
+        set((state) => ({
+          calibrationPoints: [...state.calibrationPoints, point].sort((a, b) => a.kg - b.kg),
+        })),
+
+      removeCalibrationPoint: (index) =>
+        set((state) => ({
+          calibrationPoints: state.calibrationPoints.filter((_, i) => i !== index),
+        })),
+
+      clearCalibrationPoints: () => set({ calibrationPoints: [] }),
+
       currentMax: (hand, grip) => findMax(get().maxes, hand, grip, get().activeEdgeMm),
 
       daysSinceTest: () => {
@@ -138,5 +161,6 @@ export function fingerData(state: FingerState | FingerData): FingerData {
     tests: state.tests,
     sessions: state.sessions,
     lastAbrahangsAt: state.lastAbrahangsAt,
+    calibrationPoints: state.calibrationPoints,
   };
 }
