@@ -2,21 +2,15 @@ import { Link } from 'react-router-dom';
 import { useProgressStore } from '../store/progressStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useFingerStore } from '../store/fingerStore';
-import { BUILTIN_ROUTINES, BUILTIN_ROUTINE_BY_ID } from '../data/routines';
 import { goalMetOnDay, weekMarks } from '../game/dailyGoal';
-import { addDays, todayKey } from '../game/dates';
+import { todayKey } from '../game/dates';
+import { buildPlan, dayComplete, type PlanTarget } from '../game/plan';
 import { maxByHand } from '../finger/maxTest';
-import { ABRAHANGS_MIN_GAP_HOURS, MAX_HANGS_PER_WEEK } from '../finger/constants';
 import { StreakStat } from '../components/StreakStat';
 import { XpLevelBar } from '../components/XpLevelBar';
 import { WeekStrip } from '../components/WeekStrip';
-import { TodayList, type TodayItem } from '../components/TodayList';
+import { TodayList } from '../components/TodayList';
 import { Icon } from '../components/Icon';
-
-const DAILY_ROUTINE_ID = 'daily-warp';
-const ABRAHANGS_PER_DAY = 2;
-/** Heavy sessions per week, counted across both of them together. */
-const HEAVY_PER_WEEK = { lo: 2, hi: 3 } as const;
 
 export function HomePage() {
   const progress = useProgressStore((s) => s.progress);
@@ -28,107 +22,26 @@ export function HomePage() {
   const finger = useFingerStore();
 
   const today = todayKey();
-  const doneToday = goalMetOnDay(sessions, today);
   const marks = weekMarks(sessions, progress.frozenDateKeys, today);
+  const somethingToday = goalMetOnDay(sessions, today);
 
-  const items: TodayItem[] = [];
+  const maxes = maxByHand(finger.maxes, 'half-crimp', finger.activeEdgeMm);
+  const plan = buildPlan({
+    sessions,
+    fingerSessions: finger.sessions,
+    today,
+    fingerEnabled,
+    hasMax: maxes.left !== undefined || maxes.right !== undefined,
+    lastAbrahangsAt: finger.lastAbrahangsAt,
+  });
+  const daily = plan.filter((t) => t.period === 'day');
+  const weekly = plan.filter((t) => t.period === 'week');
+  const done = dayComplete(plan);
 
-  const daily = BUILTIN_ROUTINE_BY_ID[DAILY_ROUTINE_ID];
-  if (daily) {
-    const done = sessions.some((s) => s.dateKey === today && s.routineId === DAILY_ROUTINE_ID);
-    items.push({
-      key: 'daily',
-      to: `/routines/${daily.id}`,
-      label: daily.name,
-      note: done ? 'done today' : 'the daily baseline',
-      done,
-    });
-  }
-
-  // The heavy sessions are a weekly question, not a daily one, so they show
-  // how the week is going rather than a tick for today.
-  const weekStart = addDays(today, -6);
-  const heavyThisWeek = sessions.filter(
-    (s) => s.category === 'heavy' && s.dateKey >= weekStart,
-  ).length;
-  for (const routine of BUILTIN_ROUTINES.filter((r) => r.category === 'heavy')) {
-    const doneToday = sessions.some(
-      (s) => s.dateKey === today && s.routineId === routine.id,
-    );
-    items.push({
-      key: routine.id,
-      to: `/routines/${routine.id}`,
-      label: routine.name.toLowerCase(),
-      note: `${heavyThisWeek} of ${HEAVY_PER_WEEK.lo}–${HEAVY_PER_WEEK.hi} heavy this week`,
-      done: heavyThisWeek >= HEAVY_PER_WEEK.lo,
-      blocked: doneToday ? 'done today' : undefined,
-    });
-  }
-
-  if (fingerEnabled) {
-    const maxes = maxByHand(finger.maxes, 'half-crimp', finger.activeEdgeMm);
-    const noMax = maxes.left === undefined && maxes.right === undefined;
-
-    const abrahangsToday = finger.sessions.filter(
-      (s) => s.programId === 'abrahangs' && s.dateKey === today,
-    ).length;
-    const hoursSince = finger.lastAbrahangsAt
-      ? (Date.now() - new Date(finger.lastAbrahangsAt).getTime()) / 3_600_000
-      : null;
-    const tooSoon =
-      abrahangsToday > 0 && hoursSince !== null && hoursSince < ABRAHANGS_MIN_GAP_HOURS;
-
-    items.push({
-      key: 'abrahangs',
-      to: '/finger/session/abrahangs',
-      label: 'abrahangs',
-      note: `${abrahangsToday} of ${ABRAHANGS_PER_DAY} today`,
-      done: abrahangsToday >= ABRAHANGS_PER_DAY,
-      blocked: noMax
-        ? 'needs a max test first'
-        : tooSoon
-          ? `${Math.ceil(ABRAHANGS_MIN_GAP_HOURS - hoursSince!)} h until the next one`
-          : undefined,
-    });
-
-    const weekStart = addDays(today, -6);
-    const maxHangsThisWeek = finger.sessions.filter(
-      (s) => s.programId === 'max-hangs' && s.dateKey >= weekStart,
-    ).length;
-    const doneMaxHangsToday = finger.sessions.some(
-      (s) => s.programId === 'max-hangs' && s.dateKey === today,
-    );
-    items.push({
-      key: 'max-hangs',
-      to: '/finger/session/max-hangs',
-      label: 'max hangs',
-      note: `${maxHangsThisWeek} of ${MAX_HANGS_PER_WEEK.lo}–${MAX_HANGS_PER_WEEK.hi} this week`,
-      done: maxHangsThisWeek >= MAX_HANGS_PER_WEEK.lo,
-      blocked: noMax
-        ? 'needs a max test first'
-        : doneMaxHangsToday
-          ? 'done today — leave a day between'
-          : undefined,
-    });
-
-    if (noMax) {
-      items.push({
-        key: 'max-test',
-        to: '/finger/test',
-        label: 'max test',
-        note: 'every hangboard band is a percentage of this',
-        done: false,
-      });
-    } else if (finger.retestDue()) {
-      items.push({
-        key: 'retest',
-        to: '/finger/test',
-        label: 'retest your max',
-        note: `last tested ${finger.daysSinceTest()} days ago`,
-        done: false,
-      });
-    }
-  }
+  // The max test is not part of the plan — it is the thing the plan depends
+  // on — so it only appears when it is actually blocking something.
+  const needsTest = fingerEnabled && daily.some((t) => t.blocked?.includes('max test'));
+  const retestDue = fingerEnabled && finger.retestDue();
 
   return (
     <main className="px-6 pb-28 pt-10">
@@ -160,7 +73,12 @@ export function HomePage() {
         <div className="flex items-end justify-between">
           <StreakStat streak={progress.streak} size="lg" />
           <div className="text-right">
-            <p className="text-sm lowercase">{doneToday ? 'today is done' : 'nothing yet today'}</p>
+            {/* Three states, not two. The streak only asks whether you turned
+                up; finishing the plan is a different question, and calling a
+                half-done day "done" was the thing that made this dishonest. */}
+            <p className="text-sm lowercase">
+              {done ? 'today is done' : somethingToday ? 'today, so far' : 'nothing yet today'}
+            </p>
             <p className="mt-1 text-[11px] lowercase text-ink-soft">
               {progress.streakFreezes} freeze{progress.streakFreezes === 1 ? '' : 's'} banked
             </p>
@@ -175,10 +93,40 @@ export function HomePage() {
         <XpLevelBar xp={progress.xp} />
       </div>
 
-      <section>
+      <section className="mb-10">
         <h2 className="mb-1 text-sm lowercase text-ink-soft">today</h2>
-        <TodayList items={items} />
+        <TodayList items={daily.map(toItem)} />
       </section>
+
+      <section>
+        <h2 className="mb-1 text-sm lowercase text-ink-soft">this week</h2>
+        <TodayList items={weekly.map(toItem)} />
+      </section>
+
+      {(needsTest || retestDue) && (
+        <Link
+          to="/finger/test"
+          className="mt-10 flex items-center justify-between border-b border-line-soft py-4 text-sm lowercase text-ink-soft hover:text-ink"
+        >
+          <span>
+            {needsTest ? 'max test — every band comes from it' : 'retest your max'}
+            {retestDue && !needsTest && ` · ${finger.daysSinceTest()} days ago`}
+          </span>
+          <Icon name="chevronRight" size={16} />
+        </Link>
+      )}
     </main>
   );
+}
+
+function toItem(target: PlanTarget) {
+  const of = target.targetMax ? `${target.target}–${target.targetMax}` : String(target.target);
+  return {
+    key: target.key,
+    to: target.to,
+    label: target.label,
+    note: `${target.done} of ${of}`,
+    done: target.done >= target.target,
+    blocked: target.blocked,
+  };
 }

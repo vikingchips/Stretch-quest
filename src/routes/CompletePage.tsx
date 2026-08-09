@@ -5,6 +5,8 @@ import { ACHIEVEMENT_BY_ID } from '../data/achievements';
 import { StreakStat } from '../components/StreakStat';
 import { Icon } from '../components/Icon';
 import { formatMinutes } from '../lib/format';
+import { HangIndicators } from '../components/HangIndicators';
+import type { HandIndicators } from '../finger/summary';
 
 /** Eases to the total over ~1.4s — a slow settle, not a slot machine. */
 function useCountUp(target: number, durationMs = 1400): number {
@@ -29,9 +31,10 @@ function useCountUp(target: number, durationMs = 1400): number {
   return value;
 }
 
-/** Extra line the finger module can pass through router state. */
+/** Extras the finger module passes through router state. */
 interface CompleteState extends SessionSummary {
   fingerNote?: string;
+  hangIndicators?: HandIndicators[];
 }
 
 export function CompletePage() {
@@ -52,7 +55,9 @@ export function CompletePage() {
     ['session complete', xpBreakdown.base],
     [`${timeLabel} (${formatMinutes(record.activeSec)})`, xpBreakdown.activeTime],
     ['no skips', xpBreakdown.noSkipBonus],
-    ['daily goal met', xpBreakdown.goalBonus],
+    // Paid for the first session of the day, not for finishing the plan —
+    // which is a different question, and one the home screen answers.
+    ['first session today', xpBreakdown.goalBonus],
     ['streak milestone', xpBreakdown.streakMilestoneBonus],
   ];
 
@@ -91,6 +96,12 @@ export function CompletePage() {
         </p>
       )}
 
+      {summary.hangIndicators && summary.hangIndicators.length > 0 && (
+        <div className="mt-14 flex justify-center">
+          <HangIndicators indicators={summary.hangIndicators} />
+        </div>
+      )}
+
       {leveledUp && (
         <p className="mt-8 text-sm lowercase text-pine-deep">
           level {levelAfter} reached
@@ -104,7 +115,7 @@ export function CompletePage() {
       {goalMetNow && (
         <p className="mt-6 inline-flex items-center gap-2 text-sm lowercase text-pine-deep">
           <Icon name="check" size={15} />
-          daily goal met
+          today counted
         </p>
       )}
 

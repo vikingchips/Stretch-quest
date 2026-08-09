@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { abrahangsTooHeavy, hangProgress, hangSummary } from '../../finger/engine';
+import { handIndicators } from '../../finger/summary';
 import { maxByHand } from '../../finger/maxTest';
 import { programById } from '../../finger/programs';
 import { buildHangTimeline } from '../../finger/timeline';
@@ -129,6 +130,9 @@ export function HangSessionPage() {
       replace: true,
       state: {
         ...summary,
+        // The indicators travel with the summary so the completion screen
+        // does not have to go looking for a record it was just handed.
+        hangIndicators: handIndicators(record, program.hangSec),
         fingerNote:
           program.id === 'abrahangs' && abrahangsTooHeavy(record.sets)
             ? 'that was heavier than the protocol wants. low load was enough in the study — heavier is not better here.'
