@@ -6,6 +6,7 @@ import { maxByHand } from '../../finger/maxTest';
 import { programById } from '../../finger/programs';
 import { buildHangTimeline } from '../../finger/timeline';
 import { useHangTimer } from '../../finger/useHangTimer';
+import { mockSource } from '../../finger/sourceManager';
 import { useSource } from '../../finger/useSource';
 import { useFingerStore } from '../../store/fingerStore';
 import { useProgressStore } from '../../store/progressStore';
@@ -20,8 +21,10 @@ import {
 } from '../../session/audio';
 import { ScreenWakeLock } from '../../session/wakeLock';
 import { ForceGraph } from '../../components/ForceGraph';
+import { DevicePicker } from '../../components/DevicePicker';
 import { Icon } from '../../components/Icon';
 import { formatClock } from '../../lib/format';
+import type { HangProgram } from '../../finger/programs';
 
 const KIND_LABEL: Record<string, string> = {
   prep: 'get ready',
@@ -35,10 +38,56 @@ const GRIP_LABEL: Record<string, string> = {
   'front-3-drag': 'front three, drag',
 };
 
+/**
+ * The gate in front of every hang session.
+ *
+ * A hang without a board attached is a countdown with nothing on the other end
+ * of it, so the session does not exist until something is connected — the
+ * clock, the timeline and the whole state machine are only mounted below.
+ */
 export function HangSessionPage() {
   const { programId } = useParams<{ programId: string }>();
   const navigate = useNavigate();
   const program = programId ? programById(programId) : undefined;
+  const source = useSource();
+
+  if (!program) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center px-6">
+        <p className="text-ink-soft">Program not found.</p>
+      </main>
+    );
+  }
+
+  if (source.status !== 'connected') {
+    return (
+      <main className="flex min-h-dvh flex-col px-6 pb-10 pt-6">
+        <button
+          onClick={() => navigate('/finger')}
+          className="mb-10 flex items-center gap-1 text-sm lowercase text-ink-soft hover:text-ink"
+        >
+          <Icon name="chevronLeft" size={16} />
+          back
+        </button>
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <h1 className="text-xl lowercase">{program.name}</h1>
+          <p className="measure mt-2 text-center text-sm leading-relaxed text-ink-soft">
+            Pick a board to hang on. Every rep is measured against your max, so there is nothing
+            to run without one.
+          </p>
+          <div className="mt-10 flex justify-center">
+            <DevicePicker />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  return <HangSession program={program} />;
+}
+
+function HangSession({ program }: { program: HangProgram }) {
+  const navigate = useNavigate();
   const finger = useFingerStore();
   const soundEnabled = useSettingsStore((s) => s.soundEnabled);
   const prepDurationSec = useSettingsStore((s) => s.prepDurationSec);
@@ -53,9 +102,9 @@ export function HangSessionPage() {
     [],
   );
   const segments = useMemo(
-    () => (program ? buildHangTimeline(program, maxes, prepDurationSec) : []),
+    () => buildHangTimeline(program, maxes, prepDurationSec),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [program?.id],
+    [program.id],
   );
 
   const { state, dispatch } = useHangTimer(segments);
@@ -64,6 +113,7 @@ export function HangSessionPage() {
   const prevIndexRef = useRef(-1);
   const prevCountdownRef = useRef<number>(Infinity);
   const [confirmQuit, setConfirmQuit] = useState(false);
+  const [mockLevel, setMockLevel] = useState(0);
 
   useEffect(() => {
     const lock = new ScreenWakeLock();
@@ -95,7 +145,10 @@ export function HangSessionPage() {
   // the streak, the daily goal and XP are concerned — that is the whole point
   // of routing it through completeSession rather than a parallel system.
   useEffect(() => {
-    if (state.status !== 'finished' || finishedRef.current || !program) return;
+    // An empty timeline — no max measured for this edge — starts life
+    // finished, and without this guard that reads as a completed session:
+    // a zero-XP summary screen and a badge for a session nobody did.
+    if (state.status !== 'finished' || finishedRef.current || segments.length === 0) return;
     finishedRef.current = true;
     if (soundEnabled) playComplete();
 
@@ -144,19 +197,12 @@ export function HangSessionPage() {
     program,
     maxes,
     finger.activeEdgeMm,
+    segments.length,
     recordSession,
     completeSession,
     navigate,
     soundEnabled,
   ]);
-
-  if (!program) {
-    return (
-      <main className="flex min-h-dvh items-center justify-center px-6">
-        <p className="text-ink-soft">Program not found.</p>
-      </main>
-    );
-  }
 
   if (segments.length === 0) {
     return (
@@ -247,9 +293,36 @@ export function HangSessionPage() {
           {formatClock(state.remainingMs / 1000)}
         </div>
 
+        {/* The simulated board is now reachable straight from the gate, so the
+            thing that drives it has to be reachable from here too — otherwise
+            picking it leads to a session nothing can pull on. */}
+        {source.kind === 'mock' && (
+          <div className="mt-8 w-full max-w-sm">
+            <label className="text-xs lowercase text-ink-soft" htmlFor="sim-pull">
+              simulated pull · {mockLevel} kg
+            </label>
+            <input
+              id="sim-pull"
+              type="range"
+              min={0}
+              max={80}
+              value={mockLevel}
+              onChange={(e) => {
+                const kg = Number(e.target.value);
+                setMockLevel(kg);
+                mockSource().setLevel(kg);
+              }}
+              className="mt-2 w-full accent-pine-deep"
+            />
+          </div>
+        )}
+
+        {/* Only reachable by a board dropping out mid-session — the session
+            cannot be started without one. The clock keeps running because
+            stopping it would lose the reps already recorded. */}
         {source.status !== 'connected' && (
           <p className="measure mt-6 text-xs leading-relaxed text-clay">
-            No device connected — the clock still runs, but nothing is being measured.
+            The board dropped out — the clock still runs, but nothing is being measured.
           </p>
         )}
       </div>

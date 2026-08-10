@@ -148,32 +148,33 @@ const RAW: Record<string, ExerciseAnimation> = {
     ],
   },
 
-  // Wide stance, weight sinking over one bent leg while the other stays long.
-  'cossack-squat': {
-    // Turned enough to see the bent knee travel forward; straight on, that
-    // leg disappears into the depth axis and the pose reads as the splits.
-    bestAzimuth: 35,
-    cycleMs: 3600,
+  // Standing tall, then stepping wide to one side and sitting into that hip.
+  'step-out-side-lunge': {
+    // Slightly turned: the step is lateral, so a true side view collapses it,
+    // but a little rotation keeps the bent knee readable against the torso.
+    bestAzimuth: 20,
+    cycleMs: 3400,
     keyframes: [
       pose({
-        thighL: [0.62, 0.79, 0], shinL: [-0.09, 1, 0],
-        thighR: [-0.62, 0.79, 0], shinR: [0.09, 1, 0],
-        upperArmL: [0.3, 0.4, 0.85], foreArmL: [0.05, 0.15, 1],
-        upperArmR: [-0.3, 0.4, 0.85], foreArmR: [-0.05, 0.15, 1],
+        thighL: [0.12, 1, 0], shinL: [0, 1, 0],
+        thighR: [-0.12, 1, 0], shinR: [0, 1, 0],
+        upperArmL: [0.22, 1, 0.08], foreArmL: [0.1, 1, 0.12],
+        upperArmR: [-0.22, 1, 0.08], foreArmR: [-0.1, 1, 0.12],
       }),
       pose({
-        // The pelvis travels sideways over the bent leg as it drops, which is
-        // the whole movement — sinking straight down is a squat, not a Cossack.
-        root: [4, 20, 0],
-        spine: [0.06, -1, 0.28],
-        // Knee well forward of the foot: the only way a hip gets this low.
-        thighL: [0.45, -0.15, 0.88], shinL: [0.1, 0.893, -0.44],
-        footL: [0.15, 0.02, 0.99],
-        // Long leg all but flat, heel down, toes up.
-        thighR: [-0.9, 0.44, 0], shinR: [-1, 0.28, 0],
-        footR: [-0.35, -0.94, 0],
-        upperArmL: [0.2, 0.25, 0.95], foreArmL: [0, 0.1, 1],
-        upperArmR: [-0.2, 0.25, 0.95], foreArmR: [0, 0.1, 1],
+        // The trailing foot stays where it was and the body travels out over
+        // the stepping leg — that is the difference between stepping out and
+        // simply sinking into a wide stance.
+        root: [8, 6, -4],
+        spine: [0.04, -1, 0.34],
+        // Pelvis tilts down toward the loaded side, which is what lets both
+        // feet stay flat with one leg bent and the other long.
+        hipLine: [1, 0.3, 0],
+        thighL: [0.66, 0.66, 0.3], shinL: [-0.3, 0.93, -0.2],
+        thighR: [-0.5, 0.86, -0.06], shinR: [-0.4, 0.92, 0.1],
+        // Hands counterbalance forward as the hips travel back.
+        upperArmL: [0.24, 0.62, 0.75], foreArmL: [0.1, 0.5, 0.86],
+        upperArmR: [-0.24, 0.62, 0.75], foreArmR: [-0.1, 0.5, 0.86],
       }),
     ],
   },
@@ -203,9 +204,10 @@ const RAW: Record<string, ExerciseAnimation> = {
     ],
   },
 
-  // On the back, hips held up, knees lifting one at a time.
+  // On the back, one knee held to the chest, hips driving up and lowering
+  // on the single planted foot.
   // Written along the body's own axis and then turned, so no view is end-on.
-  'glute-bridge-march': {
+  'single-leg-glute-bridge': {
     bestAzimuth: 35,
     bestElevation: 30,
     cycleMs: 3000,
@@ -213,9 +215,10 @@ const RAW: Record<string, ExerciseAnimation> = {
       pose(
         turned(
           {
-            // Pelvis a spine's worth of lift above shoulders on the floor.
-            root: [0, 19, 0],
-            spine: [-0.8, 0.6, 0],
+            // Bottom: pelvis back down on the floor the shoulders never left,
+            // so the spine lies flat along it.
+            root: [0, 31, 0],
+            spine: [-1, 0, 0],
             neck: [-1, 0, 0],
             head: [-0.9, -0.3, 0],
             shoulderLine: [0, 0, 1],
@@ -225,9 +228,13 @@ const RAW: Record<string, ExerciseAnimation> = {
             // camera, and the pose turned into four overlapping diagonals.
             upperArmL: [0.2, -0.85, 0.45], foreArmL: [-0.15, 0.4, -0.9],
             upperArmR: [0.2, -0.85, -0.45], foreArmR: [-0.15, 0.4, 0.9],
-            thighL: [0.99, -0.16, 0.06], shinL: [0.26, 0.967, 0.02],
-            thighR: [0.99, -0.16, -0.06], shinR: [0.26, 0.967, -0.02],
-            footL: [1, 0.06, 0], footR: [1, 0.06, 0],
+            // Knee up, foot flat: with the pelvis down, the thigh rises from
+            // it and the shin comes back down to the same floor.
+            thighL: [0.72, -0.7, 0.06], shinL: [0.62, 0.79, 0.02],
+            // The free leg is held there throughout — this is one long hold on
+            // one leg, not the alternating march it replaced.
+            thighR: [0.28, -1, -0.1], shinR: [0.78, 0.62, 0],
+            footL: [1, 0.06, 0], footR: [0.5, 0.5, 0],
           },
           BRIDGE_TURN,
         ),
@@ -235,16 +242,16 @@ const RAW: Record<string, ExerciseAnimation> = {
       pose(
         turned(
           {
+            // Top: pelvis a spine's worth of lift above shoulders on the floor.
             root: [0, 19, 0],
             spine: [-0.8, 0.6, 0],
             neck: [-1, 0, 0],
             head: [-0.9, -0.3, 0],
             shoulderLine: [0, 0, 1],
             hipLine: [0, 0, 1],
-            upperArmL: [0.62, 0, 0.86], foreArmL: [0.73, 0, 0.7],
-            upperArmR: [1.02, 0, -0.29], foreArmR: [0.91, 0, -0.45],
+            upperArmL: [0.2, -0.85, 0.45], foreArmL: [-0.15, 0.4, -0.9],
+            upperArmR: [0.2, -0.85, -0.45], foreArmR: [-0.15, 0.4, 0.9],
             thighL: [0.99, -0.16, 0.06], shinL: [0.26, 0.967, 0.02],
-            // Knee driven up over the hip, shin hanging loose under it.
             thighR: [0.22, -1, -0.1], shinR: [0.72, 0.69, 0],
             footL: [1, 0.06, 0], footR: [0.5, 0.5, 0],
           },
@@ -297,24 +304,35 @@ const RAW: Record<string, ExerciseAnimation> = {
     ],
   },
 
-  // Staggered at a wall, front knee driving forward over the toes.
-  'wall-ankle-rocker': {
-    bestAzimuth: 74,
-    cycleMs: 2800,
+  // Long split stance sinking until the back knee is near the floor and the
+  // front knee is well past the toes. Reads from the side, where the depth
+  // axis carries the whole movement.
+  'atg-split-squat': {
+    bestAzimuth: 78,
+    cycleMs: 3400,
     keyframes: [
       pose({
-        thighL: [0.15, 0.95, 0.3], shinL: [0, 1, 0.05],
-        thighR: [-0.15, 0.95, -0.35], shinR: [0, 1, -0.12],
-        upperArmL: [0.35, -0.25, 0.9], foreArmL: [0.12, -0.15, 1],
-        upperArmR: [-0.35, -0.25, 0.9], foreArmR: [-0.12, -0.15, 1],
+        thighL: [0.12, 0.86, 0.5], shinL: [0, 1, -0.12],
+        thighR: [-0.12, 0.62, -0.78], shinR: [0, 0.9, -0.05],
+        // Back heel is up from the start — the toes are the only contact
+        // behind, which is what allows the stance to be this long.
+        footR: [0, 0.62, -0.79],
+        upperArmL: [0.28, 0.92, 0.2], foreArmL: [0.12, 0.96, 0.24],
+        upperArmR: [-0.28, 0.92, 0.2], foreArmR: [-0.12, 0.96, 0.24],
       }),
       pose({
-        root: [0, 4, 0],
-        spine: [0, -1, 0.12],
-        thighL: [0.15, 0.7, 0.72], shinL: [0, 1, -0.5],
-        thighR: [-0.15, 0.92, -0.4], shinR: [0, 1, -0.18],
-        upperArmL: [0.35, -0.25, 0.9], foreArmL: [0.12, -0.15, 1],
-        upperArmR: [-0.35, -0.25, 0.9], foreArmR: [-0.12, -0.15, 1],
+        root: [0, 13, -1],
+        spine: [0, -1, 0.08],
+        // Shin raked forward past vertical: the knee ends up ahead of the
+        // toes, which is the position the whole exercise is named for.
+        thighL: [0.1, 0.34, 0.94], shinL: [0, 0.82, -0.57],
+        footL: [0, 0.1, 1],
+        // Back knee dropping to just off the floor, shin running back to the
+        // raised heel behind it.
+        thighR: [-0.1, 0.9, -0.43], shinR: [0, -0.12, -0.99],
+        footR: [0, 0.94, -0.34],
+        upperArmL: [0.28, 0.9, 0.28], foreArmL: [0.12, 0.94, 0.3],
+        upperArmR: [-0.28, 0.9, 0.28], foreArmR: [-0.12, 0.94, 0.3],
       }),
     ],
   },

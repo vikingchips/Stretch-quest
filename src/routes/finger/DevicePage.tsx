@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BLE_UNSUPPORTED_MESSAGE, bleSupported } from '../../finger/bleSource';
 import { RETEST_MAX_DAYS, RETEST_MIN_DAYS } from '../../finger/constants';
 import { isGradableEdge } from '../../finger/grades';
 import {
@@ -15,11 +14,10 @@ import {
   disconnectSource,
   mockSource,
   onForceSample,
-  useBleDevice,
-  useMockDevice,
 } from '../../finger/sourceManager';
 import { useSource } from '../../finger/useSource';
 import { useFingerStore } from '../../store/fingerStore';
+import { DevicePicker } from '../../components/DevicePicker';
 import { Icon } from '../../components/Icon';
 
 const RETEST_OPTIONS = [28, 35, 42, 56];
@@ -57,7 +55,6 @@ export function DevicePage() {
   const navigate = useNavigate();
   const source = useSource();
   const finger = useFingerStore();
-  const [error, setError] = useState<string | null>(null);
   const [edgeDraft, setEdgeDraft] = useState('');
   const [mockLevel, setMockLevel] = useState(0);
   const [calWeight, setCalWeight] = useState('');
@@ -65,7 +62,6 @@ export function DevicePage() {
   const [calResult, setCalResult] = useState<string | null>(null);
 
   const connected = source.status === 'connected';
-  const supported = bleSupported();
 
   const fit = fitCalibration(finger.calibrationPoints);
   // Compared against the heaviest load the protocol will ask for: max hangs
@@ -75,17 +71,6 @@ export function DevicePage() {
   const heaviestTrainingKg =
     Math.max(maxes.left ?? 0, maxes.right ?? 0) * MAX_HANGS_BAND.hi;
   const coverage = coverageWarning(fit, heaviestTrainingKg);
-
-  async function connectBle() {
-    setError(null);
-    try {
-      await useBleDevice();
-    } catch (e) {
-      // A cancelled chooser is not a failure worth shouting about.
-      const message = e instanceof Error ? e.message : String(e);
-      setError(/cancel|user gesture|chooser/i.test(message) ? null : message);
-    }
-  }
 
   /**
    * Capture one reference point, then refit and push the new factor.
@@ -171,48 +156,32 @@ export function DevicePage() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3">
-          <button
-            onClick={connectBle}
-            disabled={!supported}
-            className="border border-line py-3 text-sm lowercase text-ink hover:bg-surface disabled:text-line"
-          >
-            connect a real device
-          </button>
-          <button
-            onClick={() => void useMockDevice()}
-            className="border border-line py-3 text-sm lowercase text-ink hover:bg-surface"
-          >
-            use a simulated device
-          </button>
-          {connected && (
-            <div className="flex gap-3">
-              {/* Tares whatever is connected. This used to be wired to the
-                  simulated source only, and hidden for everything else —
-                  exactly backwards, since a real cell is the one that drifts
-                  and the one you cannot reach without walking to the board. */}
-              <button
-                onClick={() => void activeSource()?.tare()}
-                className="flex-1 border border-line-soft py-3 text-sm lowercase text-ink-soft hover:text-ink"
-              >
-                tare
-              </button>
-              <button
-                onClick={disconnectSource}
-                className="flex-1 border border-line-soft py-3 text-sm lowercase text-ink-soft hover:text-ink"
-              >
-                disconnect
-              </button>
-            </div>
-          )}
+        {/* The same list the session gate shows, so there is one way to pick a
+            board rather than two that drift apart. */}
+        <div className="mt-4">
+          <DevicePicker />
         </div>
 
-        {!supported && (
-          <p className="measure mt-4 text-xs leading-relaxed text-ink-soft">
-            {BLE_UNSUPPORTED_MESSAGE}
-          </p>
+        {connected && (
+          <div className="mt-4 flex gap-3">
+            {/* Tares whatever is connected. This used to be wired to the
+                simulated source only, and hidden for everything else —
+                exactly backwards, since a real cell is the one that drifts
+                and the one you cannot reach without walking to the board. */}
+            <button
+              onClick={() => void activeSource()?.tare()}
+              className="flex-1 border border-line-soft py-3 text-sm lowercase text-ink-soft hover:text-ink"
+            >
+              tare
+            </button>
+            <button
+              onClick={disconnectSource}
+              className="flex-1 border border-line-soft py-3 text-sm lowercase text-ink-soft hover:text-ink"
+            >
+              disconnect
+            </button>
+          </div>
         )}
-        {error && <p className="measure mt-4 text-xs leading-relaxed text-clay">{error}</p>}
 
         {source.kind === 'mock' && connected && (
           <div className="mt-6">

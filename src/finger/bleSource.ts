@@ -29,7 +29,32 @@ export function bleSupported(): boolean {
 // not in their database of sold hardware, so pointing people there would be
 // sending them somewhere that turns them away.
 export const BLE_UNSUPPORTED_MESSAGE =
-  'web bluetooth is not available in this browser. it needs chrome on android or desktop — no iphone browser supports it. the simulated device below works anywhere.';
+  'web bluetooth is not available in this browser. it needs chrome on android or desktop — no iphone browser supports it. the simulated board in this list works anywhere.';
+
+/**
+ * Devices this browser already has permission for.
+ *
+ * A web page cannot scan for bluetooth devices — only the browser's own
+ * chooser may do that, and only from a user gesture. What a page *can* do is
+ * ask which devices it has already been granted, and reconnect to one without
+ * the chooser opening at all. That is the difference between tapping a board's
+ * name and walking through a system dialog every session.
+ *
+ * getDevices() is not in every Chrome build, so a missing method or a refusal
+ * is an empty list rather than an error: the chooser is always still there.
+ */
+export async function knownDevices(): Promise<BluetoothDevice[]> {
+  if (!bleSupported()) return [];
+  const bt = navigator.bluetooth as Bluetooth & {
+    getDevices?: () => Promise<BluetoothDevice[]>;
+  };
+  if (typeof bt.getDevices !== 'function') return [];
+  try {
+    return await bt.getDevices();
+  } catch {
+    return [];
+  }
+}
 
 export class BleForceSource extends SourceBase implements ForceSource {
   readonly kind = 'ble' as const;
@@ -41,7 +66,12 @@ export class BleForceSource extends SourceBase implements ForceSource {
   private countsResolve: ((c: number | null) => void) | null = null;
   private lowPower = false;
 
-  async connect(): Promise<void> {
+  /**
+   * Connect, opening the browser's chooser only when there is no device to
+   * connect to already. Passing one that came from knownDevices() skips the
+   * dialog entirely.
+   */
+  async connect(known?: BluetoothDevice): Promise<void> {
     if (!bleSupported()) throw new Error(BLE_UNSUPPORTED_MESSAGE);
     this.setStatus('connecting');
     try {
@@ -52,13 +82,15 @@ export class BleForceSource extends SourceBase implements ForceSource {
       // in the scan response — where Chrome on Android has a history of not
       // seeing it. The service UUID sits in the main advertisement, so that
       // filter matches even when the name never arrives.
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [
-          { namePrefix: PROGRESSOR_NAME_PREFIX },
-          { services: [PROGRESSOR_SERVICE] },
-        ],
-        optionalServices: [PROGRESSOR_SERVICE],
-      });
+      const device =
+        known ??
+        (await navigator.bluetooth.requestDevice({
+          filters: [
+            { namePrefix: PROGRESSOR_NAME_PREFIX },
+            { services: [PROGRESSOR_SERVICE] },
+          ],
+          optionalServices: [PROGRESSOR_SERVICE],
+        }));
       device.addEventListener('gattserverdisconnected', this.handleDisconnect);
 
       const server = await device.gatt!.connect();

@@ -24,7 +24,7 @@ describe('weeklyDose', () => {
   it('credits every area an exercise targets', () => {
     const areas = weeklyDose([session()], TODAY).map((d) => d.area);
     // The primer is hip-led, but the frog rock also credits adductors and the
-    // wall rocker credits ankles — one session, several areas.
+    // split squat credits ankles — one session, several areas.
     expect(areas).toContain('hips');
     expect(areas).toContain('adductors');
     expect(areas).toContain('ankles');

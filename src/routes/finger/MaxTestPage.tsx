@@ -16,6 +16,7 @@ import { onForceSample } from '../../finger/sourceManager';
 import { useSource } from '../../finger/useSource';
 import { useFingerStore } from '../../store/fingerStore';
 import { todayKey } from '../../game/dates';
+import { DevicePicker } from '../../components/DevicePicker';
 import { Icon } from '../../components/Icon';
 
 const BLOCKER_MESSAGE: Record<string, string> = {
@@ -97,18 +98,21 @@ export function MaxTestPage() {
           <li>· {MAX_TEST.restSec / 60} minutes between attempts</li>
           <li>· each hand measured on its own</li>
         </ul>
-        {source.status !== 'connected' && (
-          <p className="measure mt-6 text-xs leading-relaxed text-clay">
-            No device connected. Connect one — real or simulated — on the device page first.
-          </p>
+        {/* The board comes first: a max test with nothing attached measures
+            nothing, so the list is here rather than on another page. */}
+        {source.status !== 'connected' ? (
+          <div className="mt-10">
+            <h3 className="mb-3 text-sm lowercase text-ink-soft">pick a board</h3>
+            <DevicePicker />
+          </div>
+        ) : (
+          <button
+            onClick={() => setTest({ ...test, phase: 'ready' })}
+            className="mt-10 w-full bg-pine-deep py-3 text-sm lowercase tracking-wide text-paper hover:brightness-110"
+          >
+            warmed up — start
+          </button>
         )}
-        <button
-          onClick={() => setTest({ ...test, phase: 'ready' })}
-          disabled={source.status !== 'connected'}
-          className="mt-10 w-full bg-pine-deep py-3 text-sm lowercase tracking-wide text-paper hover:brightness-110 disabled:bg-line disabled:text-ink-soft"
-        >
-          warmed up — start
-        </button>
       </Shell>
     );
   }

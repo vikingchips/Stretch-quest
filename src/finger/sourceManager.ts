@@ -15,7 +15,9 @@ import type { ForceSample, SourceStatus } from './types';
 let current: ForceSource | null = null;
 let mock: MockForceSource | null = null;
 const listeners = new Set<() => void>();
+const sampleListeners = new Set<(sample: ForceSample) => void>();
 let offStatus: (() => void) | null = null;
+let offSamples: (() => void) | null = null;
 
 interface Snapshot {
   kind: 'mock' | 'ble' | null;
@@ -47,8 +49,15 @@ function publish(): void {
 
 function adopt(source: ForceSource): void {
   offStatus?.();
+  offSamples?.();
   current = source;
   offStatus = source.onStatus(publish);
+  // The manager forwards samples rather than handing out the source's own
+  // subscription. A screen that subscribed before a device was picked would
+  // otherwise hold a subscription to nothing for its whole life.
+  offSamples = source.onSample((sample) => {
+    for (const cb of sampleListeners) cb(sample);
+  });
   publish();
 }
 
@@ -69,23 +78,32 @@ export async function useMockDevice(): Promise<void> {
   await source.connect();
 }
 
-/** Must be called from a user gesture — Web Bluetooth requires one. */
-export async function useBleDevice(): Promise<void> {
+/**
+ * Must be called from a user gesture — Web Bluetooth requires one.
+ *
+ * With a device from knownDevices() this reconnects silently; without one the
+ * browser's chooser opens, which is the only way to reach a device this
+ * browser has never been given permission for.
+ */
+export async function useBleDevice(known?: BluetoothDevice): Promise<void> {
   const source = new BleForceSource();
   if (current) current.disconnect();
   adopt(source);
-  await source.connect();
+  await source.connect(known);
 }
 
 export function disconnectSource(): void {
   current?.disconnect();
   offStatus?.();
+  offSamples?.();
   offStatus = null;
+  offSamples = null;
   current = null;
   publish();
 }
 
-/** Subscribe to the stream regardless of which source is active. */
+/** Subscribe to the stream regardless of which source is active, or when. */
 export function onForceSample(cb: (sample: ForceSample) => void): () => void {
-  return current ? current.onSample(cb) : () => {};
+  sampleListeners.add(cb);
+  return () => sampleListeners.delete(cb);
 }

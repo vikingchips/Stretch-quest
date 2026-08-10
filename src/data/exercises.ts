@@ -395,16 +395,16 @@ export const EXERCISES: Exercise[] = [
     purpose: 'Hip flexion, adductor length and ankle dorsiflexion in one position.',
   },
   {
-    id: 'cossack-squat',
-    name: 'Cossack Squat',
+    id: 'step-out-side-lunge',
+    name: 'Step Out Side Lunge',
     instructions:
-      'From a wide stance, shift your weight over one bent leg and keep the other straight with the toes up. Stay tall through the chest and move slowly between sides.',
+      'From standing, step wide to one side and sit back into that hip, knee tracking over the foot. The trailing leg stays long with the foot flat. Push off to stand tall, then step out to the other side.',
     targetAreas: ['adductors', 'hips', 'quads'],
-    modality: 'loaded',
+    modality: 'dynamic',
     defaultDurationSec: 45,
     side: 'per-side',
-    purpose: 'Abduction and adductor length under load — the frogging position.',
-    tips: 'From week 5 or so, hold a kettlebell at your chest. Loaded end range is what makes the range usable on the wall.',
+    purpose: 'Adductor length and lateral hip strength through a range you step into.',
+    tips: 'Stepping out and back means you never sit in a range you cannot get out of. Hold a kettlebell at your chest once the pattern is easy.',
   },
   {
     id: 'frog-rocks',
@@ -429,15 +429,16 @@ export const EXERCISES: Exercise[] = [
     purpose: 'Hip flexor length plus rotation — the counter to hours in the saddle.',
   },
   {
-    id: 'wall-ankle-rocker',
-    name: 'Wall Ankle Rocker',
+    id: 'atg-split-squat',
+    name: 'ATG Split Squat',
     instructions:
-      'Place your foot a hand-width from the wall and drive your knee forward over your toes without letting the heel lift. Rock in and out of the end range.',
-    targetAreas: ['ankles', 'calves'],
+      'From a long split stance, sink until the back knee is near the floor and the front knee travels well past the toes, heel staying down. Stand back up through the front foot.',
+    targetAreas: ['ankles', 'quads', 'hips'],
     modality: 'dynamic',
     defaultDurationSec: 45,
     side: 'per-side',
-    purpose: 'Dorsiflexion for smearing, high steps and Achilles protection.',
+    purpose: 'Dorsiflexion and knee-over-toe strength, with the back hip opening at the same time.',
+    tips: 'Shorten the stance until the front heel stays down — that is the range that counts. Pad the back knee if the floor is hard.',
   },
 
   // ── Protocol drills: running prep ───────────────────────────────────────
@@ -464,15 +465,16 @@ export const EXERCISES: Exercise[] = [
     purpose: 'Hip flexor length and glute activation in one movement.',
   },
   {
-    id: 'glute-bridge-march',
-    name: 'Glute Bridge March',
+    id: 'single-leg-glute-bridge',
+    name: 'Single Leg Glute Bridge',
     instructions:
-      'Lie on your back, feet flat, and lift your hips into a bridge. Hold the height and lift one knee at a time without letting the pelvis drop or twist.',
+      'Lie on your back with one foot flat and the other knee drawn toward your chest. Drive through the planted heel to lift your hips, pause at the top, and lower without letting the pelvis twist.',
     targetAreas: ['glutes', 'core', 'hips'],
     modality: 'activation',
     defaultDurationSec: 60,
-    side: 'both',
-    purpose: 'Wakes the glutes, which cycling tends to leave inhibited.',
+    side: 'per-side',
+    purpose: 'One glute at a time, which is how they work when you climb or run.',
+    tips: 'The pelvis staying level is the exercise. Drop the range before you let it drop on one side.',
   },
   {
     id: 'a-skips',
