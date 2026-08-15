@@ -24,6 +24,8 @@ import { HangSessionPage } from './routes/finger/HangSessionPage';
 import { MaxTestPage } from './routes/finger/MaxTestPage';
 import { FingerHistoryPage } from './routes/finger/FingerHistoryPage';
 import { DevicePage } from './routes/finger/DevicePage';
+import { GamesPage } from './routes/finger/games/GamesPage';
+import { GamePlayPage } from './routes/finger/games/GamePlayPage';
 
 export default function App() {
   const location = useLocation();
@@ -54,6 +56,9 @@ export default function App() {
   const immersive =
     location.pathname.startsWith('/session/') ||
     location.pathname.startsWith('/finger/session/') ||
+    // The games list keeps the nav; a game in play is as immersive as a
+    // session — note the trailing slash doing that work.
+    location.pathname.startsWith('/finger/games/') ||
     location.pathname === '/complete';
 
   return (
@@ -82,6 +87,8 @@ export default function App() {
             <Route path="/finger/test" element={<MaxTestPage />} />
             <Route path="/finger/history" element={<FingerHistoryPage />} />
             <Route path="/finger/device" element={<DevicePage />} />
+            <Route path="/finger/games" element={<GamesPage />} />
+            <Route path="/finger/games/:gameId" element={<GamePlayPage />} />
           </>
         ) : (
           <Route path="/finger/*" element={<Navigate to="/" replace />} />

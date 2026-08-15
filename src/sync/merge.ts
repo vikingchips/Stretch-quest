@@ -1,6 +1,7 @@
 import type { FingerData } from '../store/fingerStore';
-import { INITIAL_FINGER_DATA } from '../store/fingerStore';
+import { INITIAL_FINGER_DATA, MAX_GAME_RUNS } from '../store/fingerStore';
 import type { FingerMax } from '../finger/types';
+import type { GameBest, GameRun } from '../finger/games/types';
 import type { Routine, SessionRecord, UserProgress } from '../types';
 
 /**
@@ -101,6 +102,34 @@ function mergeMaxes(local: FingerMax[], remote: FingerMax[]): FingerMax[] {
   return [...byKey.values()];
 }
 
+/** Higher score wins per (game, hand); ties keep the earlier date, because
+ *  that is when the score was actually first achieved. */
+function mergeGameBests(
+  local: Record<string, GameBest>,
+  remote: Record<string, GameBest>,
+): Record<string, GameBest> {
+  const out: Record<string, GameBest> = { ...remote };
+  for (const [key, best] of Object.entries(local)) {
+    const existing = out[key];
+    if (
+      !existing ||
+      best.score > existing.score ||
+      (best.score === existing.score && best.at < existing.at)
+    ) {
+      out[key] = best;
+    }
+  }
+  return out;
+}
+
+/** Union by id, oldest dropped first once over the cap — the same shape the
+ *  store itself keeps, so a sync cannot resurrect more than the app holds. */
+function mergeGameRuns(local: GameRun[], remote: GameRun[]): GameRun[] {
+  return unionById(local, remote)
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .slice(-MAX_GAME_RUNS);
+}
+
 export function mergeFinger(
   local: FingerData,
   remote: Partial<FingerData> | null | undefined,
@@ -133,6 +162,8 @@ export function mergeFinger(
       local.calibrationPoints.length >= (r.calibrationPoints?.length ?? 0)
         ? local.calibrationPoints
         : r.calibrationPoints,
+    gameRuns: mergeGameRuns(local.gameRuns ?? [], r.gameRuns ?? []),
+    gameBests: mergeGameBests(local.gameBests ?? {}, r.gameBests ?? {}),
   };
 }
 

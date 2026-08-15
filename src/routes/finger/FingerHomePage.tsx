@@ -160,6 +160,7 @@ export function FingerHomePage() {
 
       <nav className="flex flex-col gap-px">
         {[
+          { to: '/finger/games', label: 'games' },
           { to: '/finger/history', label: 'history' },
           { to: '/finger/test', label: 'max test' },
           { to: '/finger/device', label: 'device and setup' },

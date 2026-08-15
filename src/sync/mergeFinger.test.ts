@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { mergeFinger } from './merge';
-import { INITIAL_FINGER_DATA, type FingerData } from '../store/fingerStore';
+import { INITIAL_FINGER_DATA, MAX_GAME_RUNS, type FingerData } from '../store/fingerStore';
 import type { FingerMax, FingerSessionRecord, FingerTestRecord } from '../finger/types';
+import type { GameRun } from '../finger/games/types';
 
 function max(over: Partial<FingerMax> = {}): FingerMax {
   return {
@@ -121,5 +122,78 @@ describe('mergeFinger', () => {
       lastAbrahangsAt: '2026-06-02T08:00:00.000Z',
     });
     expect(merged.lastAbrahangsAt).toBe('2026-06-02T08:00:00.000Z');
+  });
+});
+
+function run(id: string, at: string, over: Partial<GameRun> = {}): GameRun {
+  return {
+    id,
+    gameId: 'comet-run',
+    hand: 'left',
+    score: 100,
+    calibKg: 40,
+    at,
+    dateKey: at.slice(0, 10),
+    activeSec: 45,
+    ...over,
+  };
+}
+
+describe('mergeFinger · games', () => {
+  it('unions runs from both devices without duplicates', () => {
+    const merged = mergeFinger(
+      data({ gameRuns: [run('a', '2026-08-01T08:00:00.000Z')] }),
+      { gameRuns: [run('a', '2026-08-01T08:00:00.000Z'), run('b', '2026-08-02T08:00:00.000Z')] },
+    );
+    expect(merged.gameRuns.map((r) => r.id)).toEqual(['a', 'b']);
+  });
+
+  it('caps merged runs at the store limit, dropping oldest first', () => {
+    const local = Array.from({ length: MAX_GAME_RUNS }, (_, i) =>
+      run(`l${i}`, `2026-08-02T${String(i % 24).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00.000Z`),
+    );
+    const merged = mergeFinger(data({ gameRuns: local }), {
+      gameRuns: [run('old', '2026-07-01T08:00:00.000Z')],
+    });
+    expect(merged.gameRuns).toHaveLength(MAX_GAME_RUNS);
+    expect(merged.gameRuns.some((r) => r.id === 'old')).toBe(false);
+  });
+
+  it('keeps the higher best per game and hand', () => {
+    const merged = mergeFinger(
+      data({ gameBests: { 'comet-run:left': { score: 120, at: '2026-08-02T08:00:00.000Z' } } }),
+      { gameBests: { 'comet-run:left': { score: 300, at: '2026-08-01T08:00:00.000Z' } } },
+    );
+    expect(merged.gameBests['comet-run:left'].score).toBe(300);
+  });
+
+  it('a best survives even when the run that set it fell off the cap', () => {
+    // The reason bests are stored separately at all.
+    const merged = mergeFinger(
+      data({ gameBests: { 'pulsar:right': { score: 900, at: '2026-07-01T08:00:00.000Z' } } }),
+      { gameBests: {} },
+    );
+    expect(merged.gameBests['pulsar:right'].score).toBe(900);
+  });
+
+  it('a tied best keeps the earlier date', () => {
+    const merged = mergeFinger(
+      data({ gameBests: { 'comet-run:left': { score: 200, at: '2026-08-05T08:00:00.000Z' } } }),
+      { gameBests: { 'comet-run:left': { score: 200, at: '2026-08-01T08:00:00.000Z' } } },
+    );
+    expect(merged.gameBests['comet-run:left'].at).toBe('2026-08-01T08:00:00.000Z');
+  });
+
+  it('bests for different hands and games never collide', () => {
+    const merged = mergeFinger(
+      data({ gameBests: { 'comet-run:left': { score: 100, at: '2026-08-01T00:00:00.000Z' } } }),
+      { gameBests: { 'comet-run:right': { score: 90, at: '2026-08-01T00:00:00.000Z' } } },
+    );
+    expect(Object.keys(merged.gameBests).sort()).toEqual(['comet-run:left', 'comet-run:right']);
+  });
+
+  it('survives a remote row from before the games existed', () => {
+    const local = data({ gameRuns: [run('a', '2026-08-01T08:00:00.000Z')] });
+    expect(mergeFinger(local, { sessions: [] }).gameRuns.map((r) => r.id)).toEqual(['a']);
   });
 });

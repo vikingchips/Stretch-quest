@@ -10,11 +10,13 @@ import type {
   Grip,
   Hand,
 } from '../finger/types';
+import { bestKey, type GameBest, type GameRun } from '../finger/games/types';
 import { daysBetween, todayKey } from '../game/dates';
 import { localStorageAdapter, SCHEMA_VERSION, STORAGE_KEYS } from './storage';
 
 const MAX_SESSIONS = 500;
 const MAX_TESTS = 200;
+export const MAX_GAME_RUNS = 120;
 
 /**
  * Everything the finger module owns, as plain data.
@@ -40,6 +42,10 @@ export interface FingerData {
    * tell you whether the cell is linear, and a lone number cannot.
    */
   calibrationPoints: CalibrationPoint[];
+  /** Recent game runs, newest last. Bests live separately so the cap on this
+   *  list can never silently delete an all-time high score. */
+  gameRuns: GameRun[];
+  gameBests: Record<string, GameBest>;
 }
 
 export const INITIAL_FINGER_DATA: FingerData = {
@@ -52,6 +58,8 @@ export const INITIAL_FINGER_DATA: FingerData = {
   sessions: [],
   lastAbrahangsAt: null,
   calibrationPoints: [],
+  gameRuns: [],
+  gameBests: {},
 };
 
 interface FingerState extends FingerData {
@@ -64,6 +72,7 @@ interface FingerState extends FingerData {
   /** Drop the detail for a session removed from the main history. */
   deleteSession: (id: string) => void;
   addCalibrationPoint: (point: CalibrationPoint) => void;
+  recordGameRun: (run: GameRun) => void;
   removeCalibrationPoint: (index: number) => void;
   clearCalibrationPoints: () => void;
   currentMax: (hand: Hand, grip: Grip) => FingerMax | undefined;
@@ -126,6 +135,19 @@ export const useFingerStore = create<FingerState>()(
 
       clearCalibrationPoints: () => set({ calibrationPoints: [] }),
 
+      recordGameRun: (run) =>
+        set((state) => {
+          const key = bestKey(run.gameId, run.hand);
+          const best = state.gameBests[key];
+          return {
+            gameRuns: [...state.gameRuns, run].slice(-MAX_GAME_RUNS),
+            gameBests:
+              !best || run.score > best.score
+                ? { ...state.gameBests, [key]: { score: run.score, at: run.at } }
+                : state.gameBests,
+          };
+        }),
+
       currentMax: (hand, grip) => findMax(get().maxes, hand, grip, get().activeEdgeMm),
 
       daysSinceTest: () => {
@@ -162,5 +184,7 @@ export function fingerData(state: FingerState | FingerData): FingerData {
     sessions: state.sessions,
     lastAbrahangsAt: state.lastAbrahangsAt,
     calibrationPoints: state.calibrationPoints,
+    gameRuns: state.gameRuns,
+    gameBests: state.gameBests,
   };
 }
