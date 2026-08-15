@@ -236,8 +236,14 @@ function drawStarBody(
       if (Math.abs(dx) + Math.abs(dy) <= r) ctx.fillRect(x + dx, y + dy, 1, 1);
     }
   }
+  // A paper core two pixels wide at full pulse, so the star stays visible
+  // against the pine-deep blocks it spends most of its time inside.
   ctx.fillStyle = p.paper;
   ctx.fillRect(x, y, 1, 1);
+  if (r >= 2) {
+    ctx.fillRect(x - 1, y, 1, 1);
+    ctx.fillRect(x + 1, y, 1, 1);
+  }
 }
 
 function drawScene(

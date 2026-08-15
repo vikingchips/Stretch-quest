@@ -263,6 +263,30 @@ Three rules are enforced in code rather than left to the copy:
   against hand-built buffers rather than against hardware. It was verified by
   reading BigBanger's MicroPython firmware as a specification.
 
+### Games
+
+Four pixel-art games live under `grip → games`, each one a training stimulus
+in a costume: **comet run** (force is altitude — continuous holds, mostly in
+the low-middle band, no flap to spam), **pulsar** (the 7:3 repeater protocol
+as a rhythm game), **orbit decay** (a survival hold above a sinking line that
+fails softly and leaves a 1 Hz endurance curve behind), and **soft landing**
+(lunar lander where hovering costs the abrahangs band, and every landing makes
+gravity heavier).
+
+Every visit starts with a calibration pull — one hard pull whose peak becomes
+100% for that hand today — so the games need no max test and never write to
+the training max. None of them reward yanking, all of them end at low force
+rather than demanding a final effort on cooked fingers, and scores are kept
+per game and hand with the calibration recorded alongside. Games pay a little
+xp through the ordinary session path (primer weight) and hold the streak, but
+they never tick the daily plan.
+
+A game is a pure simulation plus a pixel scene behind one shell
+(`src/routes/finger/games/GamePlayPage.tsx`): `src/finger/games/<name>.ts`
+exports a `GameSpec` — init/step/score plus two draw functions — and registers
+in `src/finger/games/index.ts`. Sprites are character grids in code, drawn at
+120×160 logical pixels and integer-scaled with smoothing off.
+
 **If you already ran `supabase/schema.sql`,** run it again — the new column is
 an idempotent `alter table` and everything else is `if not exists`. There is
 no rush and no ordering to get right: a build that meets a project without the
