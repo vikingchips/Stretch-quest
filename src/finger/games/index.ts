@@ -1,5 +1,6 @@
 import { cometRun } from './comet';
 import { orbitDecay } from './decay';
+import { pulsar } from './pulsar';
 import type { GameId, GameSpec } from './types';
 
 /**
@@ -9,5 +10,6 @@ import type { GameId, GameSpec } from './types';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const GAMES: Partial<Record<GameId, GameSpec<any>>> = {
   'comet-run': cometRun,
+  pulsar,
   'orbit-decay': orbitDecay,
 };
